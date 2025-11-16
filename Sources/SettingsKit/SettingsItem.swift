@@ -34,8 +34,7 @@ public struct SettingsItem<Content: View>: SettingsContent {
             title: title,
             icon: icon,
             tags: tags,
-            searchable: searchable,
-            content: AnyView(content)
+            searchable: searchable
         )]
     }
 }

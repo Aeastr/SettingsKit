@@ -1,37 +1,43 @@
 import SwiftUI
 import SettingsKit
 
+// Observable state class that can be shared by reference
+class SettingsState: ObservableObject {
+    @Published var airplaneModeEnabled = false
+    @Published var bluetoothEnabled = true
+    @Published var personalHotspotEnabled = false
+    @Published var vpnQuickEnabled = false
+    @Published var appleIntelligenceEnabled = true
+    @Published var autoBrightness = true
+    @Published var siriSuggestions = true
+    @Published var autoStandby = true
+    @Published var debugMode = false
+    @Published var verboseLogging = false
+    @Published var showHiddenFeatures = false
+    @Published var networkDebugging = false
+    @Published var airDropEnabled = true
+    @Published var pipEnabled = true
+    @Published var autoFillPasswords = true
+    @Published var use24Hour = false
+    @Published var autoCorrect = true
+    @Published var vpnManagementEnabled = false
+    @Published var darkMode = false
+    @Published var autoJoinWiFi = true
+}
+
 @main
 struct SettingsKitDemoApp: App {
+    @StateObject private var state = SettingsState()
+
     var body: some Scene {
         WindowGroup {
-            SettingsView(DemoSettings())
+            SettingsView(DemoSettings(state: state))
         }
     }
 }
 
 struct DemoSettings: SettingsContainer {
-    // All state properties
-    @State private var airplaneModeEnabled = false
-    @State private var bluetoothEnabled = true
-    @State private var personalHotspotEnabled = false
-    @State private var vpnQuickEnabled = false
-    @State private var appleIntelligenceEnabled = true
-    @State private var autoBrightness = true
-    @State private var siriSuggestions = true
-    @State private var autoStandby = true
-    @State private var debugMode = false
-    @State private var verboseLogging = false
-    @State private var showHiddenFeatures = false
-    @State private var networkDebugging = false
-    @State private var airDropEnabled = true
-    @State private var pipEnabled = true
-    @State private var autoFillPasswords = true
-    @State private var use24Hour = false
-    @State private var autoCorrect = true
-    @State private var vpnManagementEnabled = false
-    @State private var darkMode = false
-    @State private var autoJoinWiFi = true
+    @ObservedObject var state: SettingsState
 
     var settingsBody: some SettingsContent {
         SettingsGroup("Profile", systemImage: "person.crop.circle.fill") {
@@ -49,7 +55,7 @@ struct DemoSettings: SettingsContainer {
         // Quick Settings Sections
         SettingsGroup("Connections") {
             SettingsGroup("Airplane Mode", systemImage: "airplane") {
-                SettingsItem("Toggle") { Toggle("Enabled", isOn: $airplaneModeEnabled) }
+                SettingsItem("Toggle") { Toggle("Enabled", isOn: $state.airplaneModeEnabled) }
             }
 
             SettingsGroup("Wi-Fi", systemImage: "wifi") {
@@ -57,7 +63,7 @@ struct DemoSettings: SettingsContainer {
             }
 
             SettingsGroup("Bluetooth", systemImage: "wave.3.right") {
-                SettingsItem("Toggle") { Toggle("Enabled", isOn: $bluetoothEnabled) }
+                SettingsItem("Toggle") { Toggle("Enabled", isOn: $state.bluetoothEnabled) }
             }
 
             SettingsGroup("Cellular", systemImage: "antenna.radiowaves.left.and.right") {
@@ -65,7 +71,7 @@ struct DemoSettings: SettingsContainer {
             }
 
             SettingsGroup("Personal Hotspot", systemImage: "personalhotspot") {
-                SettingsItem("Toggle") { Toggle("Enabled", isOn: $personalHotspotEnabled) }
+                SettingsItem("Toggle") { Toggle("Enabled", isOn: $state.personalHotspotEnabled) }
             }
         }
         .settingsStyle(.inline)
@@ -76,7 +82,7 @@ struct DemoSettings: SettingsContainer {
             }
 
             SettingsGroup("VPN", systemImage: "network") {
-                SettingsItem("Toggle") { Toggle("Enabled", isOn: $vpnQuickEnabled) }
+                SettingsItem("Toggle") { Toggle("Enabled", isOn: $state.vpnQuickEnabled) }
             }
         }
         .settingsStyle(.inline)
@@ -108,7 +114,7 @@ struct DemoSettings: SettingsContainer {
                 SettingsGroup("Connectivity", footer: "Manage how your device connects and shares content with other devices.") {
                     SettingsGroup("AirDrop", systemImage: "airplayaudio") {
                         SettingsItem("Receiving", icon: "person.crop.circle") {
-                            Toggle("Receiving", isOn: $airDropEnabled)
+                            Toggle("Receiving", isOn: $state.airDropEnabled)
                         }
                     }
 
@@ -120,7 +126,7 @@ struct DemoSettings: SettingsContainer {
 
                     SettingsGroup("Picture in Picture", systemImage: "rectangle.on.rectangle") {
                         SettingsItem("Automatically Start", icon: "play.rectangle") {
-                            Toggle("Auto Start", isOn: $pipEnabled)
+                            Toggle("Auto Start", isOn: $state.pipEnabled)
                         }
                     }
 
@@ -128,7 +134,7 @@ struct DemoSettings: SettingsContainer {
                     SettingsGroup("Network", systemImage: "network") {
                         SettingsGroup("Wi-Fi Settings", systemImage: "wifi") {
                             SettingsItem("Auto-Join") {
-                                Toggle("Auto-Join", isOn: $autoJoinWiFi)
+                                Toggle("Auto-Join", isOn: $state.autoJoinWiFi)
                             }
                         }
 
@@ -163,19 +169,19 @@ struct DemoSettings: SettingsContainer {
                 SettingsGroup("Settings & Privacy") {
                     SettingsGroup("AutoFill & Passwords", systemImage: "key.fill") {
                         SettingsItem("AutoFill Passwords", icon: "key") {
-                            Toggle("AutoFill", isOn: $autoFillPasswords)
+                            Toggle("AutoFill", isOn: $state.autoFillPasswords)
                         }
                     }
 
                     SettingsGroup("Date & Time", systemImage: "clock") {
                         SettingsItem("24-Hour Time", icon: "clock") {
-                            Toggle("24-Hour", isOn: $use24Hour)
+                            Toggle("24-Hour", isOn: $state.use24Hour)
                         }
                     }
 
                     SettingsGroup("Keyboard", systemImage: "keyboard") {
                         SettingsItem("Auto-Correction", icon: "text.cursor") {
-                            Toggle("Auto-Correction", isOn: $autoCorrect)
+                            Toggle("Auto-Correction", isOn: $state.autoCorrect)
                         }
                     }
 
@@ -187,7 +193,7 @@ struct DemoSettings: SettingsContainer {
 
                     SettingsGroup("VPN & Device Management", systemImage: "network") {
                         SettingsItem("VPN Status", icon: "lock.shield") {
-                            Toggle("VPN", isOn: $vpnManagementEnabled)
+                            Toggle("VPN", isOn: $state.vpnManagementEnabled)
                         }
                     }
                 }
@@ -203,7 +209,7 @@ struct DemoSettings: SettingsContainer {
             }
 
             SettingsGroup("Apple Intelligence & Siri", systemImage: "apple.logo") {
-                SettingsItem("Toggle") { Toggle("Enabled", isOn: $appleIntelligenceEnabled) }
+                SettingsItem("Toggle") { Toggle("Enabled", isOn: $state.appleIntelligenceEnabled) }
             }
 
             SettingsGroup("Camera", systemImage: "camera.fill") {
@@ -215,7 +221,7 @@ struct DemoSettings: SettingsContainer {
             }
 
             SettingsGroup("Display & Brightness", systemImage: "sun.max.fill") {
-                SettingsItem("Auto-Brightness") { Toggle("Auto", isOn: $autoBrightness) }
+                SettingsItem("Auto-Brightness") { Toggle("Auto", isOn: $state.autoBrightness) }
             }
 
             SettingsGroup("Home Screen & App Library", systemImage: "square.grid.2x2") {
@@ -226,11 +232,11 @@ struct DemoSettings: SettingsContainer {
 
         SettingsGroup("Display & Interface") {
             SettingsGroup("Search", systemImage: "magnifyingglass") {
-                SettingsItem("Siri Suggestions") { Toggle("Enabled", isOn: $siriSuggestions) }
+                SettingsItem("Siri Suggestions") { Toggle("Enabled", isOn: $state.siriSuggestions) }
             }
 
             SettingsGroup("StandBy", systemImage: "platter.2.filled.iphone") {
-                SettingsItem("Automatic") { Toggle("Auto", isOn: $autoStandby) }
+                SettingsItem("Automatic") { Toggle("Auto", isOn: $state.autoStandby) }
             }
 
             SettingsGroup("Wallpaper", systemImage: "photo.on.rectangle") {
@@ -294,22 +300,22 @@ struct DemoSettings: SettingsContainer {
         SettingsGroup("Developer") {
             SettingsGroup("Advanced", systemImage: "hammer") {
                 SettingsItem("Debug Mode", icon: "ladybug") {
-                    Toggle("Debug Mode", isOn: $debugMode)
+                    Toggle("Debug Mode", isOn: $state.debugMode)
                 }
 
                 // Conditionally show these options only when debug mode is enabled
-                if debugMode {
+                if state.debugMode {
                     SettingsItem("Verbose Logging", icon: "doc.text.fill") {
-                        Toggle("Verbose Logging", isOn: $verboseLogging)
+                        Toggle("Verbose Logging", isOn: $state.verboseLogging)
                     }
 
                     SettingsItem("Show Hidden Features", icon: "eye") {
-                        Toggle("Show Hidden Features", isOn: $showHiddenFeatures)
+                        Toggle("Show Hidden Features", isOn: $state.showHiddenFeatures)
                     }
 
                     SettingsGroup("Developer Tools", systemImage: "wrench.and.screwdriver") {
                         SettingsItem("Network Debugging", icon: "network") {
-                            Toggle("Network Debugging", isOn: $networkDebugging)
+                            Toggle("Network Debugging", isOn: $state.networkDebugging)
                         }
                     }
                 }
@@ -317,7 +323,7 @@ struct DemoSettings: SettingsContainer {
 
             SettingsGroup("Appearance", systemImage: "paintbrush") {
                 SettingsItem("Dark Mode", icon: "moon.fill") {
-                    Toggle("Dark Mode", isOn: $darkMode)
+                    Toggle("Dark Mode", isOn: $state.darkMode)
                 }
             }
         }

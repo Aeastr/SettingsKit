@@ -5,7 +5,6 @@ import SwiftUI
 public struct SettingsView<Container: SettingsContainer>: View {
     let container: Container
     @State private var searchText = ""
-    @State private var allNodes: [SettingsNode] = []
     @State private var navigationPath = NavigationPath()
 
     public init(_ container: Container) {
@@ -31,21 +30,17 @@ public struct SettingsView<Container: SettingsContainer>: View {
             }
             .navigationTitle("Settings")
             .navigationDestination(for: SettingsNode.self) { node in
-                SettingsNodeDetailView(node: node)
+                SettingsNodeDetailView(node: node, container: container)
             }
             .searchable(text: $searchText, prompt: "Search settings")
-            .onAppear{
-                if allNodes.isEmpty {
-                    // We intentionally access State values here to build the search index
-                    // The warnings are expected but harmless - we're capturing a snapshot for search
-                    allNodes = container.settingsBody.makeNodes()
-                }
-            }
         }
     }
 
     var searchResults: [SearchResult] {
         guard !searchText.isEmpty else { return [] }
+
+        // Build fresh nodes on every search to get live state
+        let allNodes = container.settingsBody.makeNodes()
 
         var results: [SearchResult] = []
         searchNodes(allNodes, query: searchText.lowercased(), results: &results)
@@ -78,7 +73,7 @@ public struct SettingsView<Container: SettingsContainer>: View {
         // Debug: print what we found
         print("=== Search results for '\(searchText)' ===")
         for result in sortedResults {
-            if case .group(_, let title, _, _, _, let children) = result.group {
+            if case .group(_, let title, _, _, _, let children, _) = result.group {
                 let score = matchScore(for: result.group, query: searchText.lowercased())
                 print("- \(title) (score: \(score))")
             }
@@ -136,7 +131,7 @@ public struct SettingsView<Container: SettingsContainer>: View {
     func searchNodes(_ nodes: [SettingsNode], query: String, results: inout [SearchResult]) {
         for node in nodes {
             switch node {
-            case .group(let id, let title, let icon, let tags, let style, let children):
+            case .group(let id, let title, let icon, let tags, let style, let children, _):
                 let groupMatches = title.lowercased().contains(query) ||
                                   tags.contains(where: { $0.lowercased().contains(query) })
 
@@ -168,7 +163,7 @@ public struct SettingsView<Container: SettingsContainer>: View {
 
                         // Add all immediate children as separate results
                         for child in children {
-                            if case .group(_, _, _, _, let childStyle, let grandchildren) = child {
+                            if case .group(_, _, _, _, let childStyle, let grandchildren, _) = child {
                                 let isLeafChild = grandchildren.allSatisfy { !$0.isGroup }
                                 if isLeafChild {
                                     print("  -> Also adding child '\(child.title)' as LEAF group")
@@ -207,7 +202,7 @@ struct SearchResultSection: View {
     @Binding var navigationPath: NavigationPath
 
     var body: some View {
-        if case .group(_, let title, let icon, _, _, _) = result.group {
+        if case .group(_, let title, let icon, _, _, _, _) = result.group {
             Group {
                 if result.isNavigation {
                     // Navigation result: show as a single tappable row
@@ -252,36 +247,78 @@ struct SearchResultItem: View {
 
     var body: some View {
         switch node {
-        case .group(_, _, _, _, _, let children):
+        case .group(_, _, _, _, _, let children, _):
             ForEach(children) { child in
                 SearchResultItem(node: child)
             }
 
-        case .item(_, _, let icon, _, _, let content):
+        case .item(_, let title, let icon, _, _):
             HStack {
                 if let icon = icon {
                     Image(systemName: icon)
                         .foregroundStyle(.secondary)
                 }
-                content
+                Text(title)
             }
         }
     }
 }
 
 /// Detail view for a settings node (used in programmatic navigation)
-struct SettingsNodeDetailView: View {
+struct SettingsNodeDetailView<Container: SettingsContainer>: View {
     let node: SettingsNode
+    let container: Container
 
     var body: some View {
-        if case .group(_, let title, _, _, _, let children) = node {
+        if case .group(let id, let title, _, _, _, _, _) = node {
+            // Find and render the live group from the container
             List {
-                ForEach(children) { child in
-                    NodeView(node: child)
-                }
+                LiveGroupContent(container: container, groupID: id)
             }
             .navigationTitle(title)
         }
+    }
+}
+
+/// Helper view that finds and renders a group by ID from the live container
+struct LiveGroupContent<Container: SettingsContainer>: View {
+    let container: Container
+    let groupID: UUID
+
+    var body: some View {
+        // Get fresh nodes from the live container - this creates a new view hierarchy
+        // but it should have the same bindings to the container's state
+        let nodes = container.settingsBody.makeNodes()
+
+        // Find the group with matching ID
+        if let group = findGroup(id: groupID, in: nodes) {
+            // Render the AnySettingsGroup directly as a View
+            // Since it now conforms to View, SwiftUI should install it properly
+            group
+                .onAppear {
+                    print("LiveGroupContent: Found and rendering group with ID \(groupID)")
+                }
+        } else {
+            Text("Group not found - ID: \(groupID)")
+                .onAppear {
+                    print("LiveGroupContent: Group not found with ID \(groupID)")
+                }
+        }
+    }
+
+    private func findGroup(id: UUID, in nodes: [SettingsNode]) -> AnySettingsGroup? {
+        for node in nodes {
+            if case .group(let nodeID, _, _, _, _, let children, let liveGroup) = node {
+                if nodeID == id {
+                    return liveGroup
+                }
+                // Recursively search children
+                if let found = findGroup(id: id, in: children) {
+                    return found
+                }
+            }
+        }
+        return nil
     }
 }
 
@@ -291,21 +328,21 @@ struct NodeView: View {
 
     var body: some View {
         switch node {
-        case .group(_, let title, let icon, _, _, _):
+        case .group(_, let title, let icon, _, _, _, _):
             // For groups, create a navigation link
             NavigationLink(value: node) {
                 Label(title, systemImage: icon ?? "folder")
             }
 
-        case .item(_, _, let icon, _, _, let content):
-            // For items, show the title/icon and render the user's view
+        case .item(_, let title, let icon, _, _):
+            // For items, show the title/icon
             HStack {
                 if let icon = icon {
                     Image(systemName: icon)
                         .foregroundStyle(.secondary)
                         .frame(width: 24)
                 }
-                content
+                Text(title)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
