@@ -15,7 +15,7 @@ public struct SettingsPath: Equatable, Hashable {
 
 /// Environment key for the current settings path
 struct SettingsPathKey: EnvironmentKey {
-    static let defaultValue: Binding<SettingsPath?> = .constant(nil)
+    nonisolated(unsafe) static let defaultValue: Binding<SettingsPath?> = .constant(nil)
 }
 
 public extension EnvironmentValues {

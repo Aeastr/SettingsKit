@@ -75,18 +75,14 @@ public extension SettingsGroup {
     }
 
     func makeNodes() -> [SettingsNode] {
-        // Inline groups are transparent in search - their children appear directly
-        if style == .inline {
-            return settingsBody.makeNodes()
-        } else {
-            return [.group(
-                id: UUID(),
-                title: title,
-                icon: icon,
-                tags: tags,
-                children: settingsBody.makeNodes()
-            )]
-        }
+        return [.group(
+            id: UUID(),
+            title: title,
+            icon: icon,
+            tags: tags,
+            isInline: style == .inline,
+            children: settingsBody.makeNodes()
+        )]
     }
 }
 

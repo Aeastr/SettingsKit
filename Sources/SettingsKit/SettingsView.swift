@@ -106,16 +106,24 @@ struct SearchResultView: View {
 
     var body: some View {
         switch node {
-        case .group(_, let title, let icon, _, let children):
-            NavigationLink {
-                List {
-                    ForEach(children) { child in
-                        SearchResultView(node: child)
-                    }
+        case .group(_, let title, let icon, _, let isInline, let children):
+            if isInline {
+                // Inline groups show their children directly
+                ForEach(children) { child in
+                    SearchResultView(node: child)
                 }
-                .navigationTitle(title)
-            } label: {
-                Label(title, systemImage: icon ?? "folder")
+            } else {
+                // Navigation groups show as links
+                NavigationLink {
+                    List {
+                        ForEach(children) { child in
+                            SearchResultView(node: child)
+                        }
+                    }
+                    .navigationTitle(title)
+                } label: {
+                    Label(title, systemImage: icon ?? "folder")
+                }
             }
 
         case .item(_, _, let icon, _, let content):
