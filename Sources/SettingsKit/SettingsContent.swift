@@ -16,6 +16,14 @@ public protocol SettingsContainer {
     var body: Body { get }
 }
 
+/// Display style for a settings group
+public enum SettingsGroupStyle {
+    /// Shows as a NavigationLink that pushes to a new page
+    case navigation
+    /// Renders content inline as a Sectionf
+    case inline
+}
+
 /// A group of settings that can contain both items and nested groups.
 public protocol SettingsGroup: SettingsContent {
     associatedtype SettingsBody: SettingsContent
@@ -29,6 +37,9 @@ public protocol SettingsGroup: SettingsContent {
     /// Optional search tags for discoverability
     var tags: [String] { get }
 
+    /// Display style - navigation (default) or inline
+    var style: SettingsGroupStyle { get }
+
     @SettingsContentBuilder
     var settingsBody: SettingsBody { get }
 }
@@ -37,11 +48,21 @@ public protocol SettingsGroup: SettingsContent {
 public extension SettingsGroup {
     var icon: String? { nil }
     var tags: [String] { [] }
+    var style: SettingsGroupStyle { .navigation }
 
-    // Implement View.body to return a NavigationLink with the content
+    // Implement View.body based on style
     var body: some View {
-        SettingsGroupView(title: title, icon: icon) {
-            settingsBody
+        Group {
+            switch style {
+            case .navigation:
+                SettingsGroupView(title: title, icon: icon) {
+                    settingsBody
+                }
+            case .inline:
+                Section {
+                    settingsBody
+                }
+            }
         }
     }
 
