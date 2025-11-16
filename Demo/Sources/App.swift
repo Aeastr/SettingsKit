@@ -31,6 +31,7 @@ struct DemoSettings: SettingsContainer {
     @State private var autoCorrect = true
     @State private var vpnManagementEnabled = false
     @State private var darkMode = false
+    @State private var autoJoinWiFi = true
 
     var settingsBody: some SettingsContent {
         SettingsGroup("Profile", systemImage: "person.crop.circle.fill") {
@@ -120,6 +121,31 @@ struct DemoSettings: SettingsContainer {
                     SettingsGroup("Picture in Picture", systemImage: "rectangle.on.rectangle") {
                         SettingsItem("Automatically Start", icon: "play.rectangle") {
                             Toggle("Auto Start", isOn: $pipEnabled)
+                        }
+                    }
+
+                    // Deeper nested navigation group
+                    SettingsGroup("Network", systemImage: "network") {
+                        SettingsGroup("Wi-Fi Settings", systemImage: "wifi") {
+                            SettingsItem("Auto-Join") {
+                                Toggle("Auto-Join", isOn: $autoJoinWiFi)
+                            }
+                        }
+
+                        SettingsGroup("VPN Configuration", systemImage: "lock.shield") {
+                            SettingsItem("VPN Type") {
+                                Text("IKEv2")
+                            }
+                        }
+
+                        SettingsGroup("Advanced", systemImage: "gearshape.2") {
+                            SettingsItem("DNS") {
+                                Text("Automatic")
+                            }
+
+                            SettingsItem("Proxy") {
+                                Text("Off")
+                            }
                         }
                     }
                 }

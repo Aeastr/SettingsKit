@@ -166,13 +166,17 @@ public struct SettingsView<Container: SettingsContainer>: View {
                             print("  -> Inline group matches, showing children only")
                         }
 
-                        // Add all immediate leaf children as separate results
+                        // Add all immediate children as separate results
                         for child in children {
-                            if case .group(_, _, _, _, _, let grandchildren) = child {
+                            if case .group(_, _, _, _, let childStyle, let grandchildren) = child {
                                 let isLeafChild = grandchildren.allSatisfy { !$0.isGroup }
                                 if isLeafChild {
                                     print("  -> Also adding child '\(child.title)' as LEAF group")
                                     results.append(SearchResult(group: child, matchedItems: grandchildren, isNavigation: false))
+                                } else if childStyle == .navigation {
+                                    // Also add navigation children
+                                    print("  -> Also adding child '\(child.title)' as NAVIGATION group")
+                                    results.append(SearchResult(group: child, matchedItems: [], isNavigation: true))
                                 }
                             }
                         }
