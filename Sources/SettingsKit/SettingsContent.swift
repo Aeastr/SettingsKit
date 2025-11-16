@@ -35,7 +35,7 @@ public protocol SettingsGroup: SettingsContent {
     associatedtype SettingsBody: SettingsContent
 
     /// The display title for this group
-    var title: LocalizedStringKey { get }
+    var title: String { get }
 
     /// Optional SF Symbol icon name
     var icon: String? { get }
@@ -47,7 +47,7 @@ public protocol SettingsGroup: SettingsContent {
     var style: SettingsGroupStyle { get }
 
     /// Optional footer text (only shown for inline style)
-    var footer: LocalizedStringKey? { get }
+    var footer: String? { get }
 
     @SettingsContentBuilder
     var settingsBody: SettingsBody { get }
