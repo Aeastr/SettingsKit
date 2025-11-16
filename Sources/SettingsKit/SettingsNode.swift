@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Internal representation of the settings tree structure.
 /// This is what we use to power search, navigation, and rendering.
-public enum SettingsNode: Identifiable {
+public enum SettingsNode: Identifiable, @unchecked Sendable {
     case group(
         id: UUID,
         title: String,
