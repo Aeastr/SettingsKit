@@ -25,7 +25,11 @@ public struct SettingsItem<Content: View>: SettingsContent {
     }
 
     public var body: some View {
-        content
+        StyledSettingsItem(
+            title: title,
+            icon: icon,
+            content: content
+        )
     }
 
     public func makeNodes() -> [SettingsNode] {
@@ -37,5 +41,26 @@ public struct SettingsItem<Content: View>: SettingsContent {
             searchable: searchable,
             content: AnyView(content)
         )]
+    }
+}
+
+// MARK: - Styled Item View
+
+/// Internal view that applies the current item style from the environment.
+struct StyledSettingsItem<Content: View>: View {
+    let title: String
+    let icon: String?
+    let content: Content
+
+    @Environment(\.settingsItemStyle) private var itemStyle
+
+    var body: some View {
+        itemStyle.makeBody(
+            configuration: SettingsItemStyleConfiguration(
+                title: title,
+                icon: icon,
+                content: AnyView(content)
+            )
+        )
     }
 }

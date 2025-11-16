@@ -73,7 +73,7 @@ public struct SettingsView<Container: SettingsContainer>: View {
         // Debug: print what we found
         print("=== Search results for '\(searchText)' ===")
         for result in sortedResults {
-            if case .group(_, let title, _, _, _, let children) = result.group {
+            if case .group(_, let title, _, _, let children) = result.group {
                 let score = matchScore(for: result.group, query: searchText.lowercased())
                 print("- \(title) (score: \(score))")
             }
@@ -131,7 +131,7 @@ public struct SettingsView<Container: SettingsContainer>: View {
     func searchNodes(_ nodes: [SettingsNode], query: String, results: inout [SearchResult]) {
         for node in nodes {
             switch node {
-            case .group(let id, let title, let icon, let tags, let style, let children):
+            case .group(let id, let title, let icon, let tags, let children):
                 let groupMatches = title.lowercased().contains(query) ||
                                   tags.contains(where: { $0.lowercased().contains(query) })
 
@@ -152,23 +152,19 @@ public struct SettingsView<Container: SettingsContainer>: View {
                         results.append(SearchResult(group: node, matchedItems: children, isNavigation: false))
                     }
                 } else {
-                    // Parent group: only show as navigation if it's a navigation-style group (not inline)
+                    // Parent group: show as navigation link
                     if groupMatches {
-                        if style == .navigation {
-                            print("  -> Adding as NAVIGATION group")
-                            results.append(SearchResult(group: node, matchedItems: [], isNavigation: true))
-                        } else {
-                            print("  -> Inline group matches, showing children only")
-                        }
+                        print("  -> Adding as NAVIGATION group")
+                        results.append(SearchResult(group: node, matchedItems: [], isNavigation: true))
 
                         // Add all immediate children as separate results
                         for child in children {
-                            if case .group(_, _, _, _, let childStyle, let grandchildren) = child {
+                            if case .group(_, _, _, _, let grandchildren) = child {
                                 let isLeafChild = grandchildren.allSatisfy { !$0.isGroup }
                                 if isLeafChild {
                                     print("  -> Also adding child '\(child.title)' as LEAF group")
                                     results.append(SearchResult(group: child, matchedItems: grandchildren, isNavigation: false))
-                                } else if childStyle == .navigation {
+                                } else {
                                     // Also add navigation children
                                     print("  -> Also adding child '\(child.title)' as NAVIGATION group")
                                     results.append(SearchResult(group: child, matchedItems: [], isNavigation: true))
@@ -202,7 +198,7 @@ struct SearchResultSection: View {
     @Binding var navigationPath: NavigationPath
 
     var body: some View {
-        if case .group(_, let title, let icon, _, _, _) = result.group {
+        if case .group(_, let title, let icon, _, let children) = result.group {
             Group {
                 if result.isNavigation {
                     // Navigation result: show as a single tappable row
@@ -247,7 +243,7 @@ struct SearchResultItem: View {
 
     var body: some View {
         switch node {
-        case .group(_, _, _, _, _, let children):
+        case .group(_, _, _, _, let children):
             ForEach(children) { child in
                 SearchResultItem(node: child)
             }
@@ -263,7 +259,7 @@ struct SettingsNodeDetailView: View {
     let node: SettingsNode
 
     var body: some View {
-        if case .group(_, let title, _, _, _, let children) = node {
+        if case .group(_, let title, _, _, let children) = node {
             List {
                 ForEach(children) { child in
                     NodeView(node: child)
@@ -280,7 +276,7 @@ struct NodeView: View {
 
     var body: some View {
         switch node {
-        case .group(_, let title, let icon, _, _, _):
+        case .group(_, let title, let icon, _, _):
             // For groups, create a navigation link
             NavigationLink(value: node) {
                 Label(title, systemImage: icon ?? "folder")

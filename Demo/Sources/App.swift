@@ -74,7 +74,7 @@ struct DemoSettings: SettingsContainer {
                 SettingsItem("Toggle") { Toggle("Enabled", isOn: $state.personalHotspotEnabled) }
             }
         }
-        .settingsStyle(.inline)
+        .settingsGroupStyle(.inline)
 
         SettingsGroup("Battery") {
             SettingsGroup("Battery", systemImage: "battery.100") {
@@ -85,7 +85,7 @@ struct DemoSettings: SettingsContainer {
                 SettingsItem("Toggle") { Toggle("Enabled", isOn: $state.vpnQuickEnabled) }
             }
         }
-        .settingsStyle(.inline)
+        .settingsGroupStyle(.inline)
 
         // Main Settings
         SettingsGroup("Main") {
@@ -109,7 +109,7 @@ struct DemoSettings: SettingsContainer {
                         }
                     }
                 }
-                .settingsStyle(.inline)
+                .settingsGroupStyle(.inline)
 
                 SettingsGroup("Connectivity", footer: "Manage how your device connects and shares content with other devices.") {
                     SettingsGroup("AirDrop", systemImage: "airplayaudio") {
@@ -155,7 +155,7 @@ struct DemoSettings: SettingsContainer {
                         }
                     }
                 }
-                .settingsStyle(.inline)
+                .settingsGroupStyle(.inline)
 
                 SettingsGroup("System") {
                     SettingsGroup("CarPlay", systemImage: "car") {
@@ -164,7 +164,7 @@ struct DemoSettings: SettingsContainer {
                         }
                     }
                 }
-                .settingsStyle(.inline)
+                .settingsGroupStyle(.inline)
 
                 SettingsGroup("Settings & Privacy") {
                     SettingsGroup("AutoFill & Passwords", systemImage: "key.fill") {
@@ -197,7 +197,7 @@ struct DemoSettings: SettingsContainer {
                         }
                     }
                 }
-                .settingsStyle(.inline)
+                .settingsGroupStyle(.inline)
             }
 
             SettingsGroup("Accessibility", systemImage: "figure.arms.open") {
@@ -228,7 +228,7 @@ struct DemoSettings: SettingsContainer {
                 SettingsItem("Layout", searchable: false) { Text("Standard").foregroundStyle(.secondary) }
             }
         }
-        .settingsStyle(.inline)
+        .settingsGroupStyle(.inline)
 
         SettingsGroup("Display & Interface") {
             SettingsGroup("Search", systemImage: "magnifyingglass") {
@@ -243,7 +243,7 @@ struct DemoSettings: SettingsContainer {
                 SettingsItem("Current", searchable: false) { Text("Dynamic").foregroundStyle(.secondary) }
             }
         }
-        .settingsStyle(.inline)
+        .settingsGroupStyle(.inline)
 
         SettingsGroup("Notifications & Focus") {
             SettingsGroup("Notifications", systemImage: "bell.badge.fill") {
@@ -262,7 +262,7 @@ struct DemoSettings: SettingsContainer {
                 SettingsItem("Usage", searchable: false) { Text("See Report").foregroundStyle(.secondary) }
             }
         }
-        .settingsStyle(.inline)
+        .settingsGroupStyle(.inline)
 
         SettingsGroup("Safety & Privacy") {
             SettingsGroup("Emergency SOS", systemImage: "sos") {
@@ -273,7 +273,7 @@ struct DemoSettings: SettingsContainer {
                 SettingsItem("Permissions", searchable: false) { Text("Review").foregroundStyle(.secondary) }
             }
         }
-        .settingsStyle(.inline)
+        .settingsGroupStyle(.inline)
 
         SettingsGroup("Cloud & Services") {
             SettingsGroup("Game Center", systemImage: "gamecontroller.fill") {
@@ -288,14 +288,14 @@ struct DemoSettings: SettingsContainer {
                 SettingsItem("Cards", searchable: false) { Text("2 cards").foregroundStyle(.secondary) }
             }
         }
-        .settingsStyle(.inline)
+        .settingsGroupStyle(.inline)
 
         SettingsGroup("Applications") {
             SettingsGroup("Apps", systemImage: "square.grid.3x3.fill") {
                 SettingsItem("Installed", searchable: false) { Text("120 apps").foregroundStyle(.secondary) }
             }
         }
-        .settingsStyle(.inline)
+        .settingsGroupStyle(.inline)
 
         SettingsGroup("Developer") {
             SettingsGroup("Advanced", systemImage: "hammer") {
@@ -327,6 +327,6 @@ struct DemoSettings: SettingsContainer {
                 }
             }
         }
-        .settingsStyle(.inline)
+        .settingsGroupStyle(.inline)
     }
 }

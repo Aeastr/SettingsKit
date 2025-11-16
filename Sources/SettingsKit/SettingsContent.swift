@@ -21,12 +21,3 @@ public extension SettingsContainer {
         settingsBody
     }
 }
-
-/// Display style for a settings group
-public enum SettingsGroupStyle {
-    /// Shows as a NavigationLink that pushes to a new page
-    case navigation
-    /// Renders content inline as a Section
-    case inline
-}
-
