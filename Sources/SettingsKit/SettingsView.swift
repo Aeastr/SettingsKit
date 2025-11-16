@@ -6,56 +6,18 @@ public struct SettingsView<Container: SettingsContainer>: View {
     let container: Container
     @State private var searchText = ""
     @State private var allNodes: [SettingsNode] = []
-    @State private var navigationPath: [String] = []
-    @Binding private var deepLinkPath: SettingsPath?
 
-    public init(_ container: Container, path: Binding<SettingsPath?> = .constant(nil)) {
+    public init(_ container: Container) {
         self.container = container
-        self._deepLinkPath = path
     }
 
     public var body: some View {
-        NavigationStack(path: $navigationPath) {
-            SettingsRenderView(content: container.body, searchText: $searchText, allNodes: $allNodes)
-                .searchable(text: $searchText, prompt: "Search settings")
-                .onAppear {
-                    // Build the searchable index
-                    allNodes = container.body.makeNodes()
-                }
-                .navigationDestination(for: String.self) { groupTitle in
-                    // Render the actual view content, not the nodes
-                    AnyView(findGroupView(withTitle: groupTitle, in: container.body))
-                }
-                .onChange(of: deepLinkPath) { _, newPath in
-                    if let path = newPath {
-                        navigationPath = path.components
-                        deepLinkPath = nil // Clear after navigating
-                    }
-                }
-        }
-    }
-
-    private func findGroupView(withTitle title: String, in content: some SettingsContent) -> some View {
-        // This is a bit hacky - we need to find and render the actual view
-        // For now, just render the searched content
-        Group {
-            if let node = findNode(withTitle: title, in: allNodes) {
-                GroupDetailView(node: node)
+        SettingsRenderView(content: container.body, searchText: $searchText, allNodes: $allNodes)
+            .searchable(text: $searchText, prompt: "Search settings")
+            .onAppear {
+                // Build the searchable index
+                allNodes = container.body.makeNodes()
             }
-        }
-    }
-
-    private func findNode(withTitle title: String, in nodes: [SettingsNode]) -> SettingsNode? {
-        for node in nodes {
-            if node.title == title {
-                return node
-            }
-            if let children = node.children,
-               let found = findNode(withTitle: title, in: children) {
-                return found
-            }
-        }
-        return nil
     }
 }
 
