@@ -1,6 +1,51 @@
 import SwiftUI
 import SettingsKit
 
+// MARK: - Custom Styles
+
+struct CustomContainerStyle: SettingsContainerStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        NavigationStack(path: configuration.navigationPath) {
+            ScrollView {
+                configuration.content
+            }
+            .navigationTitle(configuration.title)
+            .background(Color.blue.opacity(0.05))
+        }
+    }
+}
+
+struct CustomGroupStyle: SettingsGroupStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            configuration.label
+                .font(.headline)
+                .foregroundColor(.purple)
+            configuration.content
+                .padding(.leading, 8)
+        }
+        .padding()
+        .background(Color.purple.opacity(0.1))
+        .cornerRadius(12)
+    }
+}
+
+struct CustomItemStyle: SettingsItemStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack {
+            configuration.label
+                .foregroundColor(.green)
+            Spacer()
+            configuration.content
+        }
+        .padding(12)
+        .background(Color.green.opacity(0.1))
+        .cornerRadius(8)
+    }
+}
+
+// MARK: - State
+
 // Observable state class that can be shared by reference
 class SettingsState: ObservableObject {
     @Published var airplaneModeEnabled = false
@@ -32,6 +77,8 @@ struct SettingsKitDemoApp: App {
     var body: some Scene {
         WindowGroup {
             SettingsView(DemoSettings(state: state))
+                .settingsContainerStyle(.sidebar)  // Custom container style demo
+                .settingsItemStyle(CustomItemStyle())  // Custom item style demo - applies to all items
         }
     }
 }
@@ -183,6 +230,9 @@ struct DemoSettings: SettingsContainer {
                         SettingsItem("Auto-Correction", icon: "text.cursor") {
                             Toggle("Auto-Correction", isOn: $state.autoCorrect)
                         }
+                        SettingsItem("Auto-Correction", icon: "text.cursor") {
+                            Toggle("Auto-Correction", isOn: $state.autoCorrect)
+                        }
                     }
 
                     SettingsGroup("Language & Region", systemImage: "globe") {
@@ -326,6 +376,7 @@ struct DemoSettings: SettingsContainer {
                     Toggle("Dark Mode", isOn: $state.darkMode)
                 }
             }
+            .settingsGroupStyle(CustomGroupStyle())  // Custom group style demo
         }
         .settingsGroupStyle(.inline)
     }

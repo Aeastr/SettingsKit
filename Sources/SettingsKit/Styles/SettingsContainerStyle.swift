@@ -93,45 +93,6 @@ public struct SidebarSettingsContainerStyle: SettingsContainerStyle {
     }
 }
 
-/// A settings container style with a floating search bar.
-
-
-public struct FloatingSearchSettingsContainerStyle: SettingsContainerStyle {
-    public init() {}
-
-    public func makeBody(configuration: Configuration) -> some View {
-        NavigationStack(path: configuration.navigationPath) {
-            ZStack(alignment: .top) {
-                List {
-                    // Add spacing for floating search
-                    Color.clear.frame(height: 60)
-                        .listRowBackground(Color.clear)
-
-                    configuration.content
-                }
-                .navigationTitle(configuration.title)
-
-                // Floating search bar
-                if let searchText = configuration.searchText {
-                    VStack(spacing: 0) {
-                        HStack {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundStyle(.secondary)
-                            TextField("Search settings", text: searchText)
-                        }
-                        .padding()
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .padding()
-
-                        Spacer()
-                    }
-                }
-            }
-        }
-    }
-}
-
 /// A settings container style with grouped appearance.
 
 
@@ -217,13 +178,6 @@ public extension SettingsContainerStyle where Self == SidebarSettingsContainerSt
     /// A settings container style with sidebar navigation.
     static var sidebar: SidebarSettingsContainerStyle {
         SidebarSettingsContainerStyle()
-    }
-}
-
-public extension SettingsContainerStyle where Self == FloatingSearchSettingsContainerStyle {
-    /// A settings container style with floating search.
-    static var floatingSearch: FloatingSearchSettingsContainerStyle {
-        FloatingSearchSettingsContainerStyle()
     }
 }
 

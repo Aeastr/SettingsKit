@@ -1,38 +1,44 @@
 import SwiftUI
 
 /// Main view for rendering a settings container.
-/// This will eventually support different styles via the environment.
 public struct SettingsView<Container: SettingsContainer>: View {
     let container: Container
     @State private var searchText = ""
     @State private var navigationPath = NavigationPath()
+    @Environment(\.settingsContainerStyle) private var containerStyle
 
     public init(_ container: Container) {
         self.container = container
     }
 
     public var body: some View {
-        NavigationStack(path: $navigationPath) {
-            List {
-                if searchText.isEmpty {
-                    container
-                } else if searchResults.isEmpty {
-                    ContentUnavailableView(
-                        "No Results for \"\(searchText)\"",
-                        systemImage: "magnifyingglass",
-                        description: Text("Check the spelling or try a different search")
-                    )
-                } else {
-                    ForEach(searchResults) { result in
-                        SearchResultSection(result: result, navigationPath: $navigationPath)
-                    }
-                }
+        containerStyle.makeBody(
+            configuration: SettingsContainerStyleConfiguration(
+                title: "Settings",
+                content: AnyView(contentView),
+                searchText: $searchText,
+                navigationPath: $navigationPath
+            )
+        )
+        .navigationDestination(for: SettingsNode.self) { node in
+            SettingsNodeDetailView(node: node)
+        }
+    }
+
+    @ViewBuilder
+    private var contentView: some View {
+        if searchText.isEmpty {
+            container
+        } else if searchResults.isEmpty {
+            ContentUnavailableView(
+                "No Results for \"\(searchText)\"",
+                systemImage: "magnifyingglass",
+                description: Text("Check the spelling or try a different search")
+            )
+        } else {
+            ForEach(searchResults) { result in
+                SearchResultSection(result: result, navigationPath: $navigationPath)
             }
-            .navigationTitle("Settings")
-            .navigationDestination(for: SettingsNode.self) { node in
-                SettingsNodeDetailView(node: node)
-            }
-            .searchable(text: $searchText, prompt: "Search settings")
         }
     }
 
