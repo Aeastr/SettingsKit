@@ -23,10 +23,8 @@ public struct SettingsView<Container: SettingsContainer>: View {
                     allNodes = container.body.makeNodes()
                 }
                 .navigationDestination(for: String.self) { groupTitle in
-                    // Find the group node and render its content
-                    if let groupNode = findNode(withTitle: groupTitle, in: allNodes) {
-                        GroupDetailView(node: groupNode, allNodes: allNodes)
-                    }
+                    // Render the actual view content, not the nodes
+                    AnyView(findGroupView(withTitle: groupTitle, in: container.body))
                 }
                 .onChange(of: deepLinkPath) { _, newPath in
                     if let path = newPath {
@@ -34,6 +32,16 @@ public struct SettingsView<Container: SettingsContainer>: View {
                         deepLinkPath = nil // Clear after navigating
                     }
                 }
+        }
+    }
+
+    private func findGroupView(withTitle title: String, in content: some SettingsContent) -> some View {
+        // This is a bit hacky - we need to find and render the actual view
+        // For now, just render the searched content
+        Group {
+            if let node = findNode(withTitle: title, in: allNodes) {
+                GroupDetailView(node: node)
+            }
         }
     }
 
@@ -106,24 +114,16 @@ struct SearchResultView: View {
 
     var body: some View {
         switch node {
-        case .group(_, let title, let icon, _, let isInline, let children):
-            if isInline {
-                // Inline groups show their children directly
-                ForEach(children) { child in
-                    SearchResultView(node: child)
-                }
-            } else {
-                // Navigation groups show as links
-                NavigationLink {
-                    List {
-                        ForEach(children) { child in
-                            SearchResultView(node: child)
-                        }
+        case .group(_, let title, let icon, _, let children):
+            NavigationLink {
+                List {
+                    ForEach(children) { child in
+                        SearchResultView(node: child)
                     }
-                    .navigationTitle(title)
-                } label: {
-                    Label(title, systemImage: icon ?? "folder")
                 }
+                .navigationTitle(title)
+            } label: {
+                Label(title, systemImage: icon ?? "folder")
             }
 
         case .item(_, _, let icon, _, let content):
