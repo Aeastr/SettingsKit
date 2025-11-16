@@ -628,3 +628,4 @@ struct DeveloperToolsGroup: SettingsGroup {
         }
     }
 }
+
