@@ -14,7 +14,7 @@ struct SettingsKitDemoApp: App {
 }
 
 struct DemoSettings: SettingsContainer {
-    var body: some SettingsContent {
+    var settingsBody: some SettingsContent {
         ProfileSection()
         QuickSettingsSection()
         QuickSettings2()

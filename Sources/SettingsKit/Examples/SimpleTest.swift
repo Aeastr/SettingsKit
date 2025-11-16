@@ -2,7 +2,7 @@ import SwiftUI
 
 // Simplest possible test
 struct SimpleTestSettings: SettingsContainer {
-    var body: some SettingsContent {
+    var settingsBody: some SettingsContent {
         TestGroup()
     }
 }

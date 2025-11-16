@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Example Settings Container
 
 struct AppSettings: SettingsContainer {
-    var body: some SettingsContent {
+    var settingsBody: some SettingsContent {
         GeneralSettings()
         AppearanceSettings()
         AdvancedSettings()

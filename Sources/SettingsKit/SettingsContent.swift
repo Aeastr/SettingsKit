@@ -9,11 +9,17 @@ public protocol SettingsContent: View, Sendable {
 }
 
 /// A container for settings content, typically the root-level settings view.
-public protocol SettingsContainer {
-    associatedtype Body: SettingsContent
+public protocol SettingsContainer: View {
+    associatedtype SettingsBody: SettingsContent
 
     @SettingsContentBuilder
-    var body: Body { get }
+    var settingsBody: SettingsBody { get }
+}
+
+public extension SettingsContainer {
+    var body: some View {
+        settingsBody
+    }
 }
 
 /// Display style for a settings group

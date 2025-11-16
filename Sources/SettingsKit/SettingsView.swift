@@ -14,7 +14,7 @@ public struct SettingsView<Container: SettingsContainer>: View {
     public var body: some View {
         List {
             if searchText.isEmpty {
-                container.body
+                container.settingsBody
             } else {
                 ForEach(searchResults) { result in
                     SearchResultSection(result: result)
@@ -23,7 +23,7 @@ public struct SettingsView<Container: SettingsContainer>: View {
         }
         .searchable(text: $searchText, prompt: "Search settings")
         .onAppear {
-            allNodes = container.body.makeNodes()
+            allNodes = container.settingsBody.makeNodes()
         }
     }
 
