@@ -11,7 +11,6 @@ struct SettingsKitDemoApp: App {
 }
 
 struct DemoSettings: SettingsContainer {
-
     // All state properties
     @State private var airplaneModeEnabled = false
     @State private var bluetoothEnabled = true

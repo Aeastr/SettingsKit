@@ -50,15 +50,87 @@ public struct SettingsView<Container: SettingsContainer>: View {
         var results: [SearchResult] = []
         searchNodes(allNodes, query: searchText.lowercased(), results: &results)
 
-        // Debug: print what we found
-        print("=== Search results for '\(searchText)' ===")
+        // Deduplicate by group ID (keep the one with higher score)
+        var seenIDs: [UUID: SearchResult] = [:]
         for result in results {
-            if case .group(_, let title, _, _, _, let children) = result.group {
-                print("- \(title) (\(children.count) children)")
+            let id = result.group.id
+            let score = matchScore(for: result.group, query: searchText.lowercased())
+
+            if let existing = seenIDs[id] {
+                let existingScore = matchScore(for: existing.group, query: searchText.lowercased())
+                if score > existingScore {
+                    seenIDs[id] = result
+                }
+            } else {
+                seenIDs[id] = result
             }
         }
 
-        return results
+        let uniqueResults = Array(seenIDs.values)
+
+        // Sort results by match quality
+        let sortedResults = uniqueResults.sorted { lhs, rhs in
+            let lhsScore = matchScore(for: lhs.group, query: searchText.lowercased())
+            let rhsScore = matchScore(for: rhs.group, query: searchText.lowercased())
+            return lhsScore > rhsScore
+        }
+
+        // Debug: print what we found
+        print("=== Search results for '\(searchText)' ===")
+        for result in sortedResults {
+            if case .group(_, let title, _, _, _, let children) = result.group {
+                let score = matchScore(for: result.group, query: searchText.lowercased())
+                print("- \(title) (score: \(score))")
+            }
+        }
+
+        return sortedResults
+    }
+
+    func normalize(_ text: String) -> String {
+        text.lowercased()
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "&", with: "")
+            .replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: "_", with: "")
+    }
+
+    func matchScore(for node: SettingsNode, query: String) -> Int {
+        let title = node.title
+        let normalizedTitle = normalize(title)
+        let normalizedQuery = normalize(query)
+
+        // Exact match (normalized)
+        if normalizedTitle == normalizedQuery {
+            return 1000
+        }
+
+        // Starts with (normalized)
+        if normalizedTitle.hasPrefix(normalizedQuery) {
+            return 500
+        }
+
+        // Starts with (original, case-insensitive)
+        if title.lowercased().hasPrefix(query) {
+            return 400
+        }
+
+        // Contains (normalized)
+        if normalizedTitle.contains(normalizedQuery) {
+            return 300
+        }
+
+        // Contains (original, case-insensitive)
+        if title.lowercased().contains(query) {
+            return 200
+        }
+
+        // Tag match
+        if node.tags.contains(where: { normalize($0).contains(normalizedQuery) }) {
+            return 100
+        }
+
+        return 0
     }
 
     func searchNodes(_ nodes: [SettingsNode], query: String, results: inout [SearchResult]) {
