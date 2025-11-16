@@ -40,6 +40,9 @@ public protocol SettingsGroup: SettingsContent {
     /// Display style - navigation (default) or inline
     var style: SettingsGroupStyle { get }
 
+    /// Optional footer text (only shown for inline style)
+    var footer: String? { get }
+
     @SettingsContentBuilder
     var settingsBody: SettingsBody { get }
 }
@@ -49,6 +52,7 @@ public extension SettingsGroup {
     var icon: String? { nil }
     var tags: [String] { [] }
     var style: SettingsGroupStyle { .navigation }
+    var footer: String? { nil }
 
     // Implement View.body based on style
     var body: some View {
@@ -61,19 +65,28 @@ public extension SettingsGroup {
             case .inline:
                 Section {
                     settingsBody
+                } footer: {
+                    if let footer = footer {
+                        Text(footer)
+                    }
                 }
             }
         }
     }
 
     func makeNodes() -> [SettingsNode] {
-        [.group(
-            id: UUID(),
-            title: title,
-            icon: icon,
-            tags: tags,
-            children: settingsBody.makeNodes()
-        )]
+        // Inline groups are transparent in search - their children appear directly
+        if style == .inline {
+            return settingsBody.makeNodes()
+        } else {
+            return [.group(
+                id: UUID(),
+                title: title,
+                icon: icon,
+                tags: tags,
+                children: settingsBody.makeNodes()
+            )]
+        }
     }
 }
 

@@ -48,6 +48,7 @@ struct DeviceInfoSection: SettingsGroup {
 struct ConnectivitySection: SettingsGroup {
     var title: String { "Connectivity" }
     var style: SettingsGroupStyle { .inline }
+    var footer: String? { "Manage how your device connects and shares content with other devices." }
 
     var settingsBody: some SettingsContent {
         AirDropSettings()
@@ -238,6 +239,8 @@ struct AppearanceSettings: SettingsGroup {
 
 struct AdvancedSettings: SettingsGroup {
     @State private var debugMode = false
+    @State private var verboseLogging = false
+    @State private var showHiddenFeatures = false
 
     var title: String { "Advanced" }
     var icon: String? { "hammer" }
@@ -245,6 +248,33 @@ struct AdvancedSettings: SettingsGroup {
     var settingsBody: some SettingsContent {
         SettingsItem("Debug Mode", icon: "ladybug") {
             Toggle("Debug Mode", isOn: $debugMode)
+        }
+
+        // Conditionally show these options only when debug mode is enabled
+        if debugMode {
+            SettingsItem("Verbose Logging", icon: "doc.text.fill") {
+                Toggle("Verbose Logging", isOn: $verboseLogging)
+            }
+
+            SettingsItem("Show Hidden Features", icon: "eye") {
+                Toggle("Show Hidden Features", isOn: $showHiddenFeatures)
+            }
+
+            DeveloperToolsGroup()
+        }
+    }
+}
+
+// Nested group that only appears when debug mode is on
+struct DeveloperToolsGroup: SettingsGroup {
+    @State private var networkDebugging = false
+
+    var title: String { "Developer Tools" }
+    var icon: String? { "wrench.and.screwdriver" }
+
+    var settingsBody: some SettingsContent {
+        SettingsItem("Network Debugging", icon: "network") {
+            Toggle("Network Debugging", isOn: $networkDebugging)
         }
     }
 }
