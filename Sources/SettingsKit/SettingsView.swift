@@ -20,9 +20,6 @@ public struct SettingsView<Container: SettingsContainer>: View {
                 navigationPath: $navigationPath
             )
         )
-        .navigationDestination(for: SettingsNode.self) { node in
-            SettingsNodeDetailView(node: node)
-        }
     }
 
     @ViewBuilder
