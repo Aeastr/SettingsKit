@@ -34,7 +34,7 @@ public protocol SettingsContainerStyle {
 }
 
 /// The properties of a settings container that can be used by a style.
-public struct SettingsContainerStyleConfiguration {
+public struct SettingsContainerStyleConfiguration: @unchecked Sendable {
     /// The title of the settings.
     public let title: String
 
@@ -58,12 +58,17 @@ public struct DefaultSettingsContainerStyle: SettingsContainerStyle {
 
     public func makeBody(configuration: Configuration) -> some View {
         NavigationStack(path: configuration.navigationPath) {
-            List {
-                configuration.content
-            }
-            .navigationTitle(configuration.title)
-            .if(configuration.searchText != nil) { view in
-                view.searchable(text: configuration.searchText!, prompt: "Search settings")
+            if let searchText = configuration.searchText {
+                List {
+                    configuration.content
+                }
+                .navigationTitle(configuration.title)
+                .searchable(text: searchText, prompt: "Search settings")
+            } else {
+                List {
+                    configuration.content
+                }
+                .navigationTitle(configuration.title)
             }
         }
     }
@@ -135,15 +140,23 @@ public struct GroupedSettingsContainerStyle: SettingsContainerStyle {
 
     public func makeBody(configuration: Configuration) -> some View {
         NavigationStack(path: configuration.navigationPath) {
-            List {
-                configuration.content
-            }
-            #if os(iOS)
-            .listStyle(.insetGrouped)
-            #endif
-            .navigationTitle(configuration.title)
-            .if(configuration.searchText != nil) { view in
-                view.searchable(text: configuration.searchText!, prompt: "Search settings")
+            if let searchText = configuration.searchText {
+                List {
+                    configuration.content
+                }
+                #if os(iOS)
+                .listStyle(.insetGrouped)
+                #endif
+                .navigationTitle(configuration.title)
+                .searchable(text: searchText, prompt: "Search settings")
+            } else {
+                List {
+                    configuration.content
+                }
+                #if os(iOS)
+                .listStyle(.insetGrouped)
+                #endif
+                .navigationTitle(configuration.title)
             }
         }
     }
@@ -168,7 +181,7 @@ extension EnvironmentValues {
 /// A type-erased settings container style.
 
 
-public struct AnySettingsContainerStyle: SettingsContainerStyle {
+public struct AnySettingsContainerStyle: SettingsContainerStyle, @unchecked Sendable {
     private let _makeBody: (SettingsContainerStyleConfiguration) -> AnyView
 
     public init<S: SettingsContainerStyle>(_ style: S) {
@@ -218,18 +231,5 @@ public extension SettingsContainerStyle where Self == GroupedSettingsContainerSt
     /// A settings container style with grouped appearance.
     static var grouped: GroupedSettingsContainerStyle {
         GroupedSettingsContainerStyle()
-    }
-}
-
-// MARK: - Helper Extension
-
-extension View {
-    @ViewBuilder
-    func `if`<Transform: View>(_ condition: Bool, transform: (Self) -> Transform) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
     }
 }

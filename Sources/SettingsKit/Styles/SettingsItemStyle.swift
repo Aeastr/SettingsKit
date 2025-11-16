@@ -32,7 +32,7 @@ public protocol SettingsItemStyle {
 }
 
 /// The properties of a settings item that can be used by a style.
-public struct SettingsItemStyleConfiguration {
+public struct SettingsItemStyleConfiguration: @unchecked Sendable {
     /// The title of the item.
     public let title: String
 
@@ -146,7 +146,7 @@ extension EnvironmentValues {
 /// A type-erased settings item style.
 
 
-public struct AnySettingsItemStyle: SettingsItemStyle {
+public struct AnySettingsItemStyle: SettingsItemStyle, @unchecked Sendable {
     private let _makeBody: (SettingsItemStyleConfiguration) -> AnyView
 
     public init<S: SettingsItemStyle>(_ style: S) {

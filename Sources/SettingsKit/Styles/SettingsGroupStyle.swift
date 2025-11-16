@@ -32,7 +32,7 @@ public protocol SettingsGroupStyle {
 }
 
 /// The properties of a settings group that can be used by a style.
-public struct SettingsGroupStyleConfiguration {
+public struct SettingsGroupStyleConfiguration: @unchecked Sendable {
     /// The title of the group.
     public let title: String
 
@@ -85,12 +85,6 @@ public struct InlineSettingsGroupStyle: SettingsGroupStyle {
     public func makeBody(configuration: Configuration) -> some View {
         Section {
             configuration.content
-        } header: {
-            Text(configuration.title)
-        } footer: {
-            if let footer = configuration.footer {
-                Text(footer)
-            }
         }
     }
 }
@@ -142,7 +136,7 @@ extension EnvironmentValues {
 // MARK: - Type Erasure
 
 /// A type-erased settings group style.
-public struct AnySettingsGroupStyle: SettingsGroupStyle {
+public struct AnySettingsGroupStyle: SettingsGroupStyle, @unchecked Sendable {
     private let _makeBody: (SettingsGroupStyleConfiguration) -> AnyView
 
     public init<S: SettingsGroupStyle>(_ style: S) {
@@ -156,14 +150,6 @@ public struct AnySettingsGroupStyle: SettingsGroupStyle {
     }
 }
 
-// MARK: - View Extension
-
-public extension View {
-    /// Sets the style for settings groups within this view.
-    func settingsGroupStyle<S: SettingsGroupStyle>(_ style: S) -> some View {
-        environment(\.settingsGroupStyle, AnySettingsGroupStyle(style))
-    }
-}
 
 // MARK: - Static Convenience
 

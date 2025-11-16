@@ -8,6 +8,7 @@ public struct SettingsGroup<Content: SettingsContent>: SettingsContent {
     let footer: String?
     var tags: [String]
     let content: Content
+    var style: AnySettingsGroupStyle?
 
     public init(
         _ title: String,
@@ -21,6 +22,7 @@ public struct SettingsGroup<Content: SettingsContent>: SettingsContent {
         self.footer = footer
         self.tags = []
         self.content = content()
+        self.style = nil
     }
 
     public var body: some View {
@@ -28,7 +30,8 @@ public struct SettingsGroup<Content: SettingsContent>: SettingsContent {
             title: title,
             icon: icon,
             footer: footer,
-            content: content
+            content: content,
+            style: style
         )
     }
 
@@ -53,11 +56,13 @@ struct StyledSettingsGroup<Content: SettingsContent>: View {
     let icon: String?
     let footer: String?
     let content: Content
+    let style: AnySettingsGroupStyle?
 
-    @Environment(\.settingsGroupStyle) private var groupStyle
+    @Environment(\.settingsGroupStyle) private var envStyle
 
     var body: some View {
-        groupStyle.makeBody(
+        let effectiveStyle = style ?? envStyle
+        effectiveStyle.makeBody(
             configuration: SettingsGroupStyleConfiguration(
                 title: title,
                 icon: icon,
@@ -75,6 +80,17 @@ public extension SettingsGroup {
     func settingsTags(_ tags: [String]) -> Self {
         var copy = self
         copy.tags = tags
+        return copy
+    }
+
+    /// Sets the style for this specific settings group.
+    ///
+    /// This is different from the View modifier `.settingsGroupStyle()` which
+    /// affects all groups in the view hierarchy. This method only affects
+    /// this specific group.
+    func settingsGroupStyle<S: SettingsGroupStyle>(_ style: S) -> Self {
+        var copy = self
+        copy.style = AnySettingsGroupStyle(style)
         return copy
     }
 }
