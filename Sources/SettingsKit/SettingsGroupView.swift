@@ -2,11 +2,11 @@ import SwiftUI
 
 /// Default rendering for a SettingsGroup - shows as a NavigationLink
 public struct SettingsGroupView<Group: SettingsGroup>: View {
-    let title: String
+    let title: LocalizedStringKey
     let icon: String?
     let group: Group
 
-    public init(title: String, icon: String?, group: Group) {
+    public init(title: LocalizedStringKey, icon: String?, group: Group) {
         self.title = title
         self.icon = icon
         self.group = group

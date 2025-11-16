@@ -34,8 +34,8 @@ public enum SettingsGroupStyle {
 public protocol SettingsGroup: SettingsContent {
     associatedtype SettingsBody: SettingsContent
 
-    /// The display title for this group
-    var title: LocalizedStringKey { get }
+    /// The display title for this group (provide as String, will convert to LocalizedStringKey)
+    var title: String { get }
 
     /// Optional SF Symbol icon name
     var icon: String? { get }
@@ -46,8 +46,8 @@ public protocol SettingsGroup: SettingsContent {
     /// Display style - navigation (default) or inline
     var style: SettingsGroupStyle { get }
 
-    /// Optional footer text (only shown for inline style)
-    var footer: LocalizedStringKey? { get }
+    /// Optional footer text (only shown for inline style, provide as String)
+    var footer: String? { get }
 
     @SettingsContentBuilder
     var settingsBody: SettingsBody { get }
@@ -102,7 +102,7 @@ public extension SettingsGroup {
         } else {
             return [.group(
                 id: UUID(),
-                title: title,
+                title: String(localized: title),
                 icon: icon,
                 tags: tags,
                 children: children
