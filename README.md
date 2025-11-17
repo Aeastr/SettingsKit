@@ -412,6 +412,36 @@ The node tree's awareness of **navigation vs. inline presentation** ensures grou
 - Selection-based navigation for sidebar items
 - Detail pane has its own `NavigationStack` for deeper navigation
 
+## Known Issues
+
+### macOS Control Update Issue (Sidebar Style)
+
+When using the **Sidebar Style** on macOS, there is a known issue where interactive controls (Toggle, Slider, TextField, Picker, etc.) in the detail view don't visually update when interacted with, even though the underlying state changes correctly.
+
+**Symptoms:**
+- Controls appear frozen/unresponsive visually
+- The actual state behind the controls does update (verified by observing state values elsewhere)
+- The sidebar renders updates properly
+- Issue only affects macOS; iOS/iPadOS work correctly
+
+**Current Workaround:**
+The Sidebar Style uses different navigation approaches on macOS vs iOS to work around this issue:
+- **macOS**: Destination-based navigation (creates fresh view hierarchies)
+- **iOS**: Selection-based navigation (no issues observed)
+
+**Suspected Causes (Unconfirmed):**
+1. **AnyView type erasure** - Content is wrapped in `AnyView` for type erasure in the node system
+2. **Node-based rendering** - Rendering from cached node content rather than directly from view hierarchy
+3. **macOS NavigationSplitView caching** - macOS may aggressively cache detail column content
+
+**Ongoing Investigation:**
+The `refactor/nodes-metadata-only` branch explores an architectural change that removes `AnyView` content from nodes entirely, making them metadata-only for indexing/search while rendering directly from the view hierarchy. This may resolve the root cause but requires significant refactoring.
+
+See `Sources/SettingsKit/Styles/SidebarSettingsStyle.swift` for detailed implementation comments.
+
+**Alternative:**
+If you encounter issues with the Sidebar Style on macOS, consider using the Single Column Style (`.settingsStyle(.single)`) which doesn't exhibit this problem.
+
 ## Requirements
 
 - iOS 17.0+ / macOS 14.0+ / watchOS 10.0+ / tvOS 17.0+ / visionOS 1.0+
