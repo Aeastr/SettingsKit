@@ -61,6 +61,7 @@ public struct SettingsGroup<Content: SettingsContent>: SettingsContent {
             title: title,
             icon: icon,
             tags: tags,
+            presentation: presentation,
             children: children
         )]
     }
