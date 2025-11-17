@@ -5,12 +5,12 @@ import SwiftUI
 /// Result builder for declaratively composing settings content.
 @resultBuilder
 public struct SettingsContentBuilder {
-    @preconcurrency
+    @MainActor
     public static func buildBlock(_ components: any SettingsContent...) -> SettingsContentGroup {
         SettingsContentGroup(Array(components))
     }
 
-    @preconcurrency
+    @MainActor
     public static func buildArray(_ components: [any SettingsContent]) -> SettingsContentGroup {
         SettingsContentGroup(components)
     }

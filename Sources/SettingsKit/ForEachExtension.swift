@@ -2,8 +2,9 @@ import SwiftUI
 
 // MARK: - ForEach + SettingsContent
 
-extension ForEach: @unchecked Sendable, SettingsContent where Content: SettingsContent {
-    nonisolated public func makeNodes() -> [SettingsNode] {
+extension ForEach: SettingsContent where Content: SettingsContent {
+    @MainActor
+    public func makeNodes() -> [SettingsNode] {
         // ForEach can't be iterated at build time in SwiftUI
         // We need to manually iterate the data and call makeNodes on each content
         var nodes: [SettingsNode] = []

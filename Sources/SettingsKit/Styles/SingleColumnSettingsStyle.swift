@@ -1,9 +1,10 @@
 import SwiftUI
 
 /// A single-column settings style with standard navigation and list appearance.
-public struct SingleColumnSettingsStyle: SettingsStyle {
+public struct SingleColumnSettingsStyle: @preconcurrency SettingsStyle {
     public init() {}
-    
+
+    @MainActor
     public func makeContainer(configuration: ContainerConfiguration) -> some View {
         NavigationStack(path: configuration.navigationPath) {
             Group {
@@ -34,7 +35,8 @@ public struct SingleColumnSettingsStyle: SettingsStyle {
             }
         }
     }
-    
+
+    @MainActor
     public func makeGroup(configuration: GroupConfiguration) -> some View {
         switch configuration.presentation {
         case .navigation:
@@ -53,7 +55,8 @@ public struct SingleColumnSettingsStyle: SettingsStyle {
             }
         }
     }
-    
+
+    @MainActor
     public func makeItem(configuration: ItemConfiguration) -> some View {
         configuration.content
     }
