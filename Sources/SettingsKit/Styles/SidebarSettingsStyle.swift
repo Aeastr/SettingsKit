@@ -59,47 +59,11 @@ public struct SidebarSettingsStyle: SettingsStyle {
         }
     }
     
-    public func makeCustomGroup(configuration: CustomGroupConfiguration) -> some View {
-        SidebarCustomNavigationLink(configuration: configuration)
-    }
-
     public func makeItem(configuration: ItemConfiguration) -> some View {
         HStack {
             Text(configuration.title)
             Spacer()
             configuration.content
-        }
-    }
-}
-
-// Custom group navigation link that shows raw content without List wrapper
-private struct SidebarCustomNavigationLink: View {
-    let configuration: SettingsCustomGroupConfiguration
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-
-    var body: some View {
-#if os(macOS)
-        destinationBasedLink
-#else
-        selectionBasedLink
-#endif
-    }
-
-    private var destinationBasedLink: some View {
-        NavigationLink {
-            NavigationStack {
-                // Raw content, no List wrapper
-                configuration.content
-                    .navigationTitle(configuration.title)
-            }
-        } label: {
-            configuration.label
-        }
-    }
-
-    private var selectionBasedLink: some View {
-        NavigationLink(value: configuration) {
-            configuration.label
         }
     }
 }
@@ -195,23 +159,18 @@ private struct SidebarContainer: View {
                         selectedGroup.content
                     }
                     .navigationTitle(selectedGroup.title)
+                    // Handle nested navigation (e.g., General → AirDrop)
+                    .navigationDestination(for: SettingsGroupConfiguration.self) { nestedGroupConfig in
+                        List {
+                            // Render directly from view hierarchy for proper state observation
+                            nestedGroupConfig.content
+                        }
+                        .navigationTitle(nestedGroupConfig.title)
+                    }
                 } else {
                     Text("Select a setting")
                         .foregroundStyle(.secondary)
                 }
-            }
-            // Handle nested navigation (e.g., General → AirDrop)
-            .navigationDestination(for: SettingsGroupConfiguration.self) { nestedGroupConfig in
-                List {
-                    // Render directly from view hierarchy for proper state observation
-                    nestedGroupConfig.content
-                }
-                .navigationTitle(nestedGroupConfig.title)
-            }
-            .navigationDestination(for: SettingsCustomGroupConfiguration.self) { customGroupConfig in
-                // Custom group in nested navigation - no List wrapper
-                customGroupConfig.content
-                    .navigationTitle(customGroupConfig.title)
             }
 #endif
         }

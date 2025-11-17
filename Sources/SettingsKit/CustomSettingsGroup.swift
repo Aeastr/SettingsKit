@@ -49,12 +49,15 @@ public struct CustomSettingsGroup<Content: View>: SettingsContent {
     public var body: some View {
         let style = EnvironmentValues().settingsStyle
 
-        // Render as custom group (without List wrapper)
-        style.makeCustomGroup(
-            configuration: SettingsCustomGroupConfiguration(
+        // Always render as navigation group
+        style.makeGroup(
+            configuration: SettingsGroupConfiguration(
                 title: title,
                 icon: icon,
-                content: AnyView(content)
+                footer: nil,
+                presentation: .navigation,
+                content: AnyView(content),
+                children: [] // No indexed children
             )
         )
     }

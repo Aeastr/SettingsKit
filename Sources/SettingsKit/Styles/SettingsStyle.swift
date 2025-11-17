@@ -39,7 +39,6 @@ import SwiftUI
 public protocol SettingsStyle {
     associatedtype ContainerBody: View
     associatedtype GroupBody: View
-    associatedtype CustomGroupBody: View
     associatedtype ItemBody: View
 
     /// Configuration for the settings container.
@@ -47,9 +46,6 @@ public protocol SettingsStyle {
 
     /// Configuration for a settings group.
     typealias GroupConfiguration = SettingsGroupConfiguration
-
-    /// Configuration for a custom settings group.
-    typealias CustomGroupConfiguration = SettingsCustomGroupConfiguration
 
     /// Configuration for a settings item.
     typealias ItemConfiguration = SettingsItemConfiguration
@@ -60,30 +56,8 @@ public protocol SettingsStyle {
     /// Creates a view that represents a settings group.
     @ViewBuilder func makeGroup(configuration: GroupConfiguration) -> GroupBody
 
-    /// Creates a view that represents a custom settings group (without List wrapper).
-    @ViewBuilder func makeCustomGroup(configuration: CustomGroupConfiguration) -> CustomGroupBody
-
     /// Creates a view that represents a settings item.
     @ViewBuilder func makeItem(configuration: ItemConfiguration) -> ItemBody
-}
-
-// MARK: - Default Implementations
-
-public extension SettingsStyle {
-    /// Default implementation that falls back to makeGroup.
-    /// Converts CustomGroupConfiguration to GroupConfiguration.
-    func makeCustomGroup(configuration: CustomGroupConfiguration) -> some View {
-        makeGroup(
-            configuration: SettingsGroupConfiguration(
-                title: configuration.title,
-                icon: configuration.icon,
-                footer: nil,
-                presentation: .navigation,
-                content: configuration.content,
-                children: []
-            )
-        )
-    }
 }
 
 // MARK: - Configuration Types
@@ -145,39 +119,6 @@ public struct SettingsGroupConfiguration: @unchecked Sendable, Hashable {
     }
 }
 
-/// The properties of a custom settings group that can be used by a style.
-public struct SettingsCustomGroupConfiguration: @unchecked Sendable, Hashable {
-    /// The title of the custom group.
-    public let title: String
-
-    /// The icon of the custom group, if any.
-    public let icon: String?
-
-    /// The custom content (not wrapped in List).
-    public let content: AnyView
-
-    /// Internal ID for hashing
-    private let id = UUID()
-
-    /// A view that represents the group's label (title + icon).
-    @ViewBuilder
-    public var label: some View {
-        if let icon = icon {
-            Label(title, systemImage: icon)
-        } else {
-            Text(title)
-        }
-    }
-
-    public static func == (lhs: SettingsCustomGroupConfiguration, rhs: SettingsCustomGroupConfiguration) -> Bool {
-        lhs.id == rhs.id
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
-}
-
 /// The properties of a settings item that can be used by a style.
 public struct SettingsItemConfiguration: @unchecked Sendable {
     /// The title of the item.
@@ -220,7 +161,6 @@ extension EnvironmentValues {
 public struct AnySettingsStyle: SettingsStyle, @unchecked Sendable {
     private let _makeContainer: (SettingsContainerConfiguration) -> AnyView
     private let _makeGroup: (SettingsGroupConfiguration) -> AnyView
-    private let _makeCustomGroup: (SettingsCustomGroupConfiguration) -> AnyView
     private let _makeItem: (SettingsItemConfiguration) -> AnyView
 
     public init<S: SettingsStyle>(_ style: S) {
@@ -229,9 +169,6 @@ public struct AnySettingsStyle: SettingsStyle, @unchecked Sendable {
         }
         _makeGroup = { configuration in
             AnyView(style.makeGroup(configuration: configuration))
-        }
-        _makeCustomGroup = { configuration in
-            AnyView(style.makeCustomGroup(configuration: configuration))
         }
         _makeItem = { configuration in
             AnyView(style.makeItem(configuration: configuration))
@@ -244,10 +181,6 @@ public struct AnySettingsStyle: SettingsStyle, @unchecked Sendable {
 
     public func makeGroup(configuration: SettingsGroupConfiguration) -> some View {
         _makeGroup(configuration)
-    }
-
-    public func makeCustomGroup(configuration: SettingsCustomGroupConfiguration) -> some View {
-        _makeCustomGroup(configuration)
     }
 
     public func makeItem(configuration: SettingsItemConfiguration) -> some View {
