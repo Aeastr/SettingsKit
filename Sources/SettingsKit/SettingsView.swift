@@ -144,14 +144,19 @@ struct SearchResultSection<Container: SettingsContainer>: View {
                     Label(title, systemImage: icon ?? "folder")
                 }
             } else {
-                // Leaf group result: show as section with items rendered directly from nodes
+                // Leaf group result: show as section with actual item content from registry
                 Section {
-                    // Can't render from view hierarchy due to AnyView caching, use node titles
                     ForEach(result.matchedItems) { item in
-                        if let icon = item.icon {
-                            Label(item.title, systemImage: icon)
+                        if let view = SettingsNodeViewRegistry.shared.view(for: item.id) {
+                            // Render the actual content from the registry
+                            view
                         } else {
-                            Text(item.title)
+                            // Fallback to title if no view registered
+                            if let icon = item.icon {
+                                Label(item.title, systemImage: icon)
+                            } else {
+                                Text(item.title)
+                            }
                         }
                     }
                 } header: {

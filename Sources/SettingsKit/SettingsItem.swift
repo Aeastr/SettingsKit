@@ -61,7 +61,12 @@ public struct SettingsItem<Content: View>: SettingsContent {
     }
 
     public func makeNodes() -> [SettingsNode] {
-        [.item(
+        // Register the view builder for this item so search can render it
+        SettingsNodeViewRegistry.shared.register(id: id) { [content] in
+            AnyView(content)
+        }
+
+        return [.item(
             id: id,
             title: title,
             icon: icon,
