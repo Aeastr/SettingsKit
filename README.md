@@ -66,9 +66,11 @@ class AppSettings {
 }
 
 struct MySettings: SettingsContainer {
-    @Bindable var settings: AppSettings
+    @Environment(AppSettings.self) var appSettings
 
     var settingsBody: some SettingsContent {
+        @Bindable var settings = appSettings
+
         SettingsGroup("General", systemImage: "gear") {
             SettingsItem("Notifications") {
                 Toggle("Enable", isOn: $settings.notificationsEnabled)
