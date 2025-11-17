@@ -18,7 +18,7 @@
 
 SettingsKit provides a declarative API for building settings interfaces that feel native to iOS and macOS. Define your settings hierarchy with simple, composable building blocks, and get automatic support for navigation, search, and multiple presentation styles out of the box.
 
-<img width="1200" height="675" alt="Example" src="https://github.com/user-attachments/assets/53f3a6e3-9145-4671-a0dc-b182d79ce9e7" />
+<img width="1280" height="640" alt="githubsocialpreview" src="https://github.com/user-attachments/assets/7d937cbd-182d-4715-b030-fd172a9cdc08" />
 
 ## Features
 
