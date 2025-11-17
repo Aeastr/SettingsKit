@@ -134,6 +134,31 @@ SettingsGroup("Quick Settings", .inline) {
 }
 ```
 
+### Custom Settings Groups
+
+For completely custom UI that doesn't fit the standard settings structure, use `CustomSettingsGroup`:
+
+```swift
+CustomSettingsGroup("Advanced Tools", systemImage: "hammer") {
+    VStack(spacing: 20) {
+        Text("Your Custom UI")
+            .font(.largeTitle)
+
+        // Any SwiftUI view you want
+        Button("Custom Action") {
+            performAction()
+        }
+    }
+    .padding()
+}
+```
+
+Custom groups are indexed and searchable (by title, icon, and tags), but their content is rendered as-is without indexing individual elements. This is perfect for:
+- Complex custom interfaces that don't use standard settings controls
+- Charts, graphs, or data visualizations
+- Custom layouts that need full control over presentation
+- Third-party UI components
+
 ### Settings Items
 
 Items are the individual settings within a group:
@@ -323,6 +348,20 @@ SettingsItem("Current Status", searchable: false) {
 }
 ```
 
+### Custom Groups with Tags
+
+Add tags to custom groups to improve searchability:
+
+```swift
+CustomSettingsGroup("Developer Tools", systemImage: "hammer")
+    .settingsTags(["debug", "testing", "advanced"])
+{
+    YourCustomDeveloperUI()
+}
+```
+
+The group itself (title, icon, tags) will appear in search results, and tapping it navigates to your custom view.
+
 ## How It Works
 
 SettingsKit uses a hybrid architecture that combines **metadata-only nodes** for indexing and search with a **view registry system** for dynamic rendering. This design enables powerful search capabilities while maintaining live, reactive SwiftUI views with proper state observation.
@@ -358,6 +397,8 @@ SettingsNode Tree:
 │  └─ Item: "Dark Mode" → ID: def456
 ├─ Group: "Appearance" (navigation)
 │  └─ Item: "Font Size" → ID: ghi789
+├─ CustomGroup: "Developer Tools" (navigation) → ID: xyz789
+│  └─ (no children - custom content not indexed)
 └─ Group: "Privacy & Security" (navigation)
    └─ Item: "Auto Lock Delay" → ID: jkl012
 ```
@@ -367,7 +408,7 @@ Each node stores:
 - **Title & Icon** - Display information for search results
 - **Tags** - Additional keywords for search discoverability
 - **Presentation Mode** - Navigation link or inline section (for groups)
-- **Children** - Nested groups and items (for groups)
+- **Children** - Nested groups and items (for groups; empty for custom groups)
 - **⚠️ No Content** - Views are NOT stored in nodes
 
 #### The View Registry
@@ -380,13 +421,18 @@ SettingsNodeViewRegistry.shared.register(id: itemID) {
     AnyView(Toggle("Enable", isOn: $settings.notificationsEnabled))
 }
 
+// When CustomSettingsGroup.makeNodes() is called:
+SettingsNodeViewRegistry.shared.register(id: customGroupID) {
+    AnyView(YourCompletelyCustomView())
+}
+
 // Later, in search results:
 if let view = SettingsNodeViewRegistry.shared.view(for: itemID) {
     view  // Renders the actual Toggle with live state binding
 }
 ```
 
-This registry allows search results to render **actual interactive controls** (Toggle, Slider, TextField, etc.) rather than static text labels.
+This registry allows search results to render **actual interactive controls** (Toggle, Slider, TextField, etc.) rather than static text labels. For custom groups, the entire custom view is registered and navigated to when selected.
 
 #### How Search Works
 
