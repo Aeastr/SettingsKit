@@ -78,7 +78,7 @@ public struct SettingsContainerConfiguration: @unchecked Sendable {
 }
 
 /// The properties of a settings group that can be used by a style.
-public struct SettingsGroupConfiguration: @unchecked Sendable {
+public struct SettingsGroupConfiguration: @unchecked Sendable, Hashable {
     /// The title of the group.
     public let title: String
 
@@ -94,6 +94,9 @@ public struct SettingsGroupConfiguration: @unchecked Sendable {
     /// The content of the group.
     public let content: AnyView
 
+    /// Internal ID for hashing
+    private let id = UUID()
+
     /// A view that represents the group's label (title + icon).
     @ViewBuilder
     public var label: some View {
@@ -102,6 +105,14 @@ public struct SettingsGroupConfiguration: @unchecked Sendable {
         } else {
             Text(title)
         }
+    }
+
+    public static func == (lhs: SettingsGroupConfiguration, rhs: SettingsGroupConfiguration) -> Bool {
+        lhs.id == rhs.id
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
 
@@ -135,17 +146,25 @@ public struct DefaultSettingsStyle: SettingsStyle {
 
     public func makeContainer(configuration: ContainerConfiguration) -> some View {
         NavigationStack(path: configuration.navigationPath) {
-            if let searchText = configuration.searchText {
-                List {
-                    configuration.content
+            Group {
+                if let searchText = configuration.searchText {
+                    List {
+                        configuration.content
+                    }
+                    .navigationTitle(configuration.title)
+                    .searchable(text: searchText, prompt: "Search settings")
+                } else {
+                    List {
+                        configuration.content
+                    }
+                    .navigationTitle(configuration.title)
                 }
-                .navigationTitle(configuration.title)
-                .searchable(text: searchText, prompt: "Search settings")
-            } else {
+            }
+            .navigationDestination(for: SettingsGroupConfiguration.self) { groupConfig in
                 List {
-                    configuration.content
+                    groupConfig.content
                 }
-                .navigationTitle(configuration.title)
+                .navigationTitle(groupConfig.title)
             }
         }
     }
@@ -153,12 +172,7 @@ public struct DefaultSettingsStyle: SettingsStyle {
     public func makeGroup(configuration: GroupConfiguration) -> some View {
         switch configuration.presentation {
         case .navigation:
-            NavigationLink {
-                List {
-                    configuration.content
-                }
-                .navigationTitle(configuration.title)
-            } label: {
+            NavigationLink(value: configuration) {
                 configuration.label
             }
         case .inline:
@@ -184,34 +198,13 @@ public struct SidebarSettingsStyle: SettingsStyle {
     public init() {}
 
     public func makeContainer(configuration: ContainerConfiguration) -> some View {
-        NavigationSplitView {
-            if let searchText = configuration.searchText {
-                List {
-                    configuration.content
-                }
-                .navigationTitle(configuration.title)
-                .searchable(text: searchText, prompt: "Search settings")
-            } else {
-                List {
-                    configuration.content
-                }
-                .navigationTitle(configuration.title)
-            }
-        } detail: {
-            Text("Select a setting")
-                .foregroundStyle(.secondary)
-        }
+        SidebarContainer(configuration: configuration)
     }
 
     public func makeGroup(configuration: GroupConfiguration) -> some View {
         switch configuration.presentation {
         case .navigation:
-            NavigationLink {
-                List {
-                    configuration.content
-                }
-                .navigationTitle(configuration.title)
-            } label: {
+            NavigationLink(value: configuration) {
                 configuration.label
             }
         case .inline:
@@ -230,29 +223,80 @@ public struct SidebarSettingsStyle: SettingsStyle {
     }
 }
 
+private struct SidebarContainer: View {
+    let configuration: SettingsContainerConfiguration
+    @State private var selectedGroup: SettingsGroupConfiguration?
+
+    var body: some View {
+        NavigationSplitView {
+            if let searchText = configuration.searchText {
+                List(selection: $selectedGroup) {
+                    configuration.content
+                }
+                .navigationTitle(configuration.title)
+                .searchable(text: searchText, prompt: "Search settings")
+            } else {
+                List(selection: $selectedGroup) {
+                    configuration.content
+                }
+                .navigationTitle(configuration.title)
+            }
+        } detail: {
+            if let selectedGroup {
+                NavigationStack(path: configuration.navigationPath) {
+                    List {
+                        selectedGroup.content
+                    }
+                    .navigationTitle(selectedGroup.title)
+                    .navigationDestination(for: SettingsGroupConfiguration.self) { groupConfig in
+                        List {
+                            groupConfig.content
+                        }
+                        .navigationTitle(groupConfig.title)
+                    }
+                }
+            } else {
+                Text("Select a setting")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
 /// A settings style with grouped/inset appearance.
 public struct GroupedSettingsStyle: SettingsStyle {
     public init() {}
 
     public func makeContainer(configuration: ContainerConfiguration) -> some View {
         NavigationStack(path: configuration.navigationPath) {
-            if let searchText = configuration.searchText {
+            Group {
+                if let searchText = configuration.searchText {
+                    List {
+                        configuration.content
+                    }
+                    #if os(iOS)
+                    .listStyle(.insetGrouped)
+                    #endif
+                    .navigationTitle(configuration.title)
+                    .searchable(text: searchText, prompt: "Search settings")
+                } else {
+                    List {
+                        configuration.content
+                    }
+                    #if os(iOS)
+                    .listStyle(.insetGrouped)
+                    #endif
+                    .navigationTitle(configuration.title)
+                }
+            }
+            .navigationDestination(for: SettingsGroupConfiguration.self) { groupConfig in
                 List {
-                    configuration.content
+                    groupConfig.content
                 }
                 #if os(iOS)
                 .listStyle(.insetGrouped)
                 #endif
-                .navigationTitle(configuration.title)
-                .searchable(text: searchText, prompt: "Search settings")
-            } else {
-                List {
-                    configuration.content
-                }
-                #if os(iOS)
-                .listStyle(.insetGrouped)
-                #endif
-                .navigationTitle(configuration.title)
+                .navigationTitle(groupConfig.title)
             }
         }
     }
@@ -260,15 +304,7 @@ public struct GroupedSettingsStyle: SettingsStyle {
     public func makeGroup(configuration: GroupConfiguration) -> some View {
         switch configuration.presentation {
         case .navigation:
-            NavigationLink {
-                List {
-                    configuration.content
-                }
-                #if os(iOS)
-                .listStyle(.insetGrouped)
-                #endif
-                .navigationTitle(configuration.title)
-            } label: {
+            NavigationLink(value: configuration) {
                 configuration.label
             }
         case .inline:
@@ -306,21 +342,22 @@ public struct CardSettingsStyle: SettingsStyle {
                 .padding()
             }
             .navigationTitle(configuration.title)
+            .navigationDestination(for: SettingsGroupConfiguration.self) { groupConfig in
+                ScrollView {
+                    VStack(spacing: 16) {
+                        groupConfig.content
+                    }
+                    .padding()
+                }
+                .navigationTitle(groupConfig.title)
+            }
         }
     }
 
     public func makeGroup(configuration: GroupConfiguration) -> some View {
         switch configuration.presentation {
         case .navigation:
-            NavigationLink {
-                ScrollView {
-                    VStack(spacing: 16) {
-                        configuration.content
-                    }
-                    .padding()
-                }
-                .navigationTitle(configuration.title)
-            } label: {
+            NavigationLink(value: configuration) {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         configuration.label
