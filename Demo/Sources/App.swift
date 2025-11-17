@@ -89,7 +89,6 @@ struct DemoSettings: SettingsContainer {
 
     var settingsBody: some SettingsContent {
         @Bindable var state = settings
-        Text("\(settings.airplaneModeEnabled)")
             SettingsGroup("Profile", systemImage: "person.crop.circle.fill") {
                 SettingsItem("Account Info") {
                     VStack(alignment: .leading) {
