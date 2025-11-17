@@ -100,7 +100,7 @@ public struct DefaultSettingsSearch: SettingsSearch {
                 let groupMatches = normalize(title).contains(normalizedQuery) ||
                                   tags.contains(where: { normalize($0).contains(normalizedQuery) })
 
-                let isLeafGroup = children.allSatisfy { !$0.isGroup }
+                let isLeafGroup = !children.isEmpty && children.allSatisfy { !$0.isGroup }
 
                 if isLeafGroup {
                     // Leaf group: check if group or any searchable children match

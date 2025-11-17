@@ -131,6 +131,7 @@ struct DemoSettings: SettingsContainer {
                         }
 
                         SettingsGroup("Picture in Picture", systemImage: "rectangle.on.rectangle") {
+                            Text("")
                             SettingsItem("Automatically Start", icon: "play.rectangle") {
                                 Toggle("Auto Start", isOn: $state.pipEnabled)
                             }
@@ -294,6 +295,52 @@ struct DemoSettings: SettingsContainer {
             SettingsGroup("Applications", .inline) {
                 SettingsGroup("Apps", systemImage: "square.grid.3x3.fill") {
                     SettingsItem("Installed", searchable: false) { Text("120 apps").foregroundStyle(.secondary) }
+                }
+
+                CustomSettingsGroup("Custom UI Demo", systemImage: "paintbrush.pointed") {
+                    VStack(spacing: 20) {
+                        Text("Completely Custom View")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+
+                        Text("This is a CustomSettingsGroup - you can put ANY SwiftUI view here!")
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.secondary)
+                            .padding()
+
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                                Text("Group is indexed & searchable")
+                            }
+
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                                Text("Content is NOT indexed")
+                            }
+
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                                Text("Perfect for custom UI")
+                            }
+                        }
+                        .padding()
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(12)
+
+                        Spacer()
+
+                        Button("Tap Me!") {
+                            print("Custom button tapped!")
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .padding()
                 }
             }
 

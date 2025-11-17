@@ -139,9 +139,25 @@ struct SearchResultSection<Container: SettingsContainer>: View {
         if case .group(_, let title, let icon, _, _, _) = result.group {
             if result.isNavigation {
                 // Navigation result: show as a single tappable row
-                NavigationLink(value: result.group.asGroupConfiguration()) {
+                let config = result.group.asGroupConfiguration()
+#if os(macOS)
+                // macOS: Use destination-based navigation (matches SidebarNavigationLink)
+                NavigationLink {
+                    NavigationStack {
+                        List {
+                            config.content
+                        }
+                        .navigationTitle(config.title)
+                    }
+                } label: {
                     Label(title, systemImage: icon ?? "folder")
                 }
+#else
+                // iOS: Use selection-based navigation (matches SidebarNavigationLink)
+                NavigationLink(value: config) {
+                    Label(title, systemImage: icon ?? "folder")
+                }
+#endif
             } else {
                 // Leaf group result: show as section with actual item content from registry
                 Section {
@@ -159,7 +175,17 @@ struct SearchResultSection<Container: SettingsContainer>: View {
                         }
                     }
                 } header: {
-                    NavigationLink(value: result.group.asGroupConfiguration()) {
+                    let config = result.group.asGroupConfiguration()
+#if os(macOS)
+                    // macOS: Use destination-based navigation (matches SidebarNavigationLink)
+                    NavigationLink {
+                        NavigationStack {
+                            List {
+                                config.content
+                            }
+                            .navigationTitle(config.title)
+                        }
+                    } label: {
                         HStack {
                             if let icon = icon {
                                 Image(systemName: icon)
@@ -172,6 +198,22 @@ struct SearchResultSection<Container: SettingsContainer>: View {
                         }
                     }
                     .buttonStyle(.plain)
+#else
+                    // iOS: Use selection-based navigation (matches SidebarNavigationLink)
+                    NavigationLink(value: config) {
+                        HStack {
+                            if let icon = icon {
+                                Image(systemName: icon)
+                            }
+                            Text(title)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+#endif
                 }
             }
         }
