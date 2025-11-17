@@ -58,6 +58,11 @@ class AppSettings {
     var notificationsEnabled = true
     var darkMode = false
     var username = "Guest"
+    var fontSize: Double = 14.0
+    var soundEnabled = true
+    var autoLockDelay: Double = 300
+    var hardwareAcceleration = true
+    // ... 20+ more settings
 }
 
 struct MySettings: SettingsContainer {
@@ -68,26 +73,29 @@ struct MySettings: SettingsContainer {
             SettingsItem("Notifications") {
                 Toggle("Enable", isOn: $settings.notificationsEnabled)
             }
-
+            
             SettingsItem("Dark Mode") {
                 Toggle("Enable", isOn: $settings.darkMode)
             }
         }
-
-        SettingsGroup("Account", systemImage: "person.circle") {
-            SettingsItem("Username") {
-                Text(settings.username)
+        
+        SettingsGroup("Appearance", systemImage: "paintbrush") {
+            SettingsItem("Font Size") {
+                Slider(value: $settings.fontSize, in: 10...24, step: 1) {
+                    Text("Size: \(Int(settings.fontSize))pt")
+                }
             }
         }
-    }
-}
-
-struct ContentView: View {
-    @State private var settings = AppSettings()
-
-    var body: some View {
-        MySettings(settings: settings)
-            .settingsStyle(.sidebar)
+        
+        SettingsGroup("Privacy & Security", systemImage: "lock.shield") {
+            SettingsItem("Auto Lock Delay") {
+                Slider(value: $settings.autoLockDelay, in: 60...3600, step: 60) {
+                    Text("Delay: \(Int(settings.autoLockDelay/60)) minutes")
+                }
+            }
+        }
+        
+        // ... more groups
     }
 }
 ```
