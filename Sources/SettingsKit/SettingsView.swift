@@ -38,12 +38,6 @@ public struct SettingsView<Container: SettingsContainer>: View {
             ForEach(searchResults) { result in
                 SearchResultSection(container: container, result: result, navigationPath: $navigationPath)
             }
-            .navigationDestination(for: SettingsGroupConfiguration.self) { groupConfig in
-                List {
-                    groupConfig.content
-                }
-                .navigationTitle(groupConfig.title)
-            }
         }
     }
 
@@ -145,7 +139,13 @@ struct SearchResultSection<Container: SettingsContainer>: View {
         if case .group(_, let title, let icon, _, _, _) = result.group {
             if result.isNavigation {
                 // Navigation result: show as a single tappable row
-                NavigationLink(value: result.group.asGroupConfiguration()) {
+                NavigationLink {
+                    let config = result.group.asGroupConfiguration()
+                    List {
+                        config.content
+                    }
+                    .navigationTitle(config.title)
+                } label: {
                     Label(title, systemImage: icon ?? "folder")
                 }
             } else {
@@ -165,7 +165,13 @@ struct SearchResultSection<Container: SettingsContainer>: View {
                         }
                     }
                 } header: {
-                    NavigationLink(value: result.group.asGroupConfiguration()) {
+                    NavigationLink {
+                        let config = result.group.asGroupConfiguration()
+                        List {
+                            config.content
+                        }
+                        .navigationTitle(config.title)
+                    } label: {
                         HStack {
                             if let icon = icon {
                                 Image(systemName: icon)
