@@ -147,15 +147,23 @@ struct SearchResultSection<Container: SettingsContainer>: View {
                 Section {
                     ForEach(result.matchedItems) { item in
                         if let view = SettingsNodeViewRegistry.shared.view(for: item.id) {
-                            // Render the actual content from the registry
-                            view
+                            // Render the actual content from the registry with label
+                            HStack {
+//                                if let icon = item.icon {
+//                                    Label(item.title, systemImage: icon)
+//                                } else {
+                                    Text(item.title)
+//                                }
+                                Spacer()
+                                view
+                            }
                         } else {
                             // Fallback to title if no view registered
-                            if let icon = item.icon {
-                                Label(item.title, systemImage: icon)
-                            } else {
+//                            if let icon = item.icon {
+//                                Label(item.title, systemImage: icon)
+//                            } else {
                                 Text(item.title)
-                            }
+//                            }
                         }
                     }
                 } header: {

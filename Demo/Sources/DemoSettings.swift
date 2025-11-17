@@ -7,12 +7,6 @@ struct DemoSettings: SettingsContainer {
     var settingsBody: some SettingsContent {
         @Bindable var state = settings
         SettingsGroup("Debug", .inline) {
-            Text("Toggle: \(state.testToggle ? "ON" : "OFF")")
-            Text("Slider: \(Int(state.testSlider * 100))%")
-            Text("Text: \(state.testText)")
-            Text("Picker: \(state.testPicker)")
-            Text("Stepper: \(state.testStepper)")
-            Text("Counter: \(state.testCounter)")
             SettingsGroup("Input Testing", systemImage: "wrench.and.screwdriver") {
                 SettingsItem("Toggle Test") {
                     Toggle("Test Toggle", isOn: $state.testToggle)
@@ -64,7 +58,7 @@ struct DemoSettings: SettingsContainer {
             // Quick Settings Sections (inline presentation)
             SettingsGroup("Connections", .inline) {
                 SettingsGroup("Airplane Mode", systemImage: "airplane") {
-                    SettingsItem("Toggle") { Toggle("Enabled", isOn: $state.airplaneModeEnabled) }
+                    SettingsItem("Enabled") { Toggle(isOn: $state.airplaneModeEnabled) {} }
                 }
 
                 SettingsGroup("Wi-Fi", systemImage: "wifi") {
@@ -72,7 +66,7 @@ struct DemoSettings: SettingsContainer {
                 }
 
                 SettingsGroup("Bluetooth", systemImage: "wave.3.right") {
-                    SettingsItem("Toggle") { Toggle("Enabled", isOn: $state.bluetoothEnabled) }
+                    SettingsItem("Enabled") { Toggle(isOn: $state.bluetoothEnabled) {} }
                 }
 
                 SettingsGroup("Cellular", systemImage: "antenna.radiowaves.left.and.right") {
@@ -80,7 +74,7 @@ struct DemoSettings: SettingsContainer {
                 }
 
                 SettingsGroup("Personal Hotspot", systemImage: "personalhotspot") {
-                    SettingsItem("Toggle") { Toggle("Enabled", isOn: $state.personalHotspotEnabled) }
+                    SettingsItem("Enabled") { Toggle(isOn: $state.personalHotspotEnabled) {} }
                 }
             }
 
@@ -90,7 +84,7 @@ struct DemoSettings: SettingsContainer {
                 }
 
                 SettingsGroup("VPN", systemImage: "network") {
-                    SettingsItem("Toggle") { Toggle("Enabled", isOn: $state.vpnQuickEnabled) }
+                    SettingsItem("Enabled") { Toggle(isOn: $state.vpnQuickEnabled) {} }
                 }
             }
 
@@ -120,7 +114,7 @@ struct DemoSettings: SettingsContainer {
                     SettingsGroup("Connectivity", .inline, footer: "Manage how your device connects and shares content with other devices.") {
                         SettingsGroup("AirDrop", systemImage: "airplayaudio") {
                             SettingsItem("Receiving", icon: "person.crop.circle") {
-                                Toggle("Receiving", isOn: $state.airDropEnabled)
+                                Toggle(isOn: $state.airDropEnabled) {}
                             }
                         }
 
@@ -207,11 +201,33 @@ struct DemoSettings: SettingsContainer {
                 }
 
                 SettingsGroup("Accessibility", systemImage: "figure.arms.open") {
-                    SettingsItem("Options", searchable: false) { Text("Configure").foregroundStyle(.secondary) }
+                    SettingsItem("VoiceOver", icon: "speaker.wave.2") {
+                        Toggle(isOn: $state.voiceOverEnabled) {}
+                    }
+
+                    SettingsItem("Zoom", icon: "plus.magnifyingglass") {
+                        Toggle(isOn: $state.zoomEnabled) {}
+                    }
+
+//                    SettingsItem("Display & Text Size", icon: "textformat.size") {
+//                        Slider(value: $state.textSize, in: 1...7, step: 1)
+//                    }
+
+                    SettingsItem("Display Accommodations", icon: "eye") {
+                        Toggle(isOn: $state.displayAccommodations) {}
+                    }
                 }
 
                 SettingsGroup("Action Button", systemImage: "button.programmable") {
-                    SettingsItem("Action", searchable: false) { Text("Shortcuts").foregroundStyle(.secondary) }
+                    SettingsItem("Action", icon: "hand.tap") {
+                        Picker(selection: $state.actionButtonFunction) {
+                            Text("Silent Mode").tag(0)
+                            Text("Camera").tag(1)
+                            Text("Flashlight").tag(2)
+                            Text("Voice Memo").tag(3)
+                            Text("Shortcuts").tag(4)
+                        } label: {}
+                    }
                 }
 
                 SettingsGroup("Apple Intelligence & Siri", systemImage: "apple.logo") {
@@ -219,7 +235,28 @@ struct DemoSettings: SettingsContainer {
                 }
 
                 SettingsGroup("Camera", systemImage: "camera.fill") {
-                    SettingsItem("Settings", searchable: false) { Text("Configure").foregroundStyle(.secondary) }
+                    SettingsItem("Preserve Settings", icon: "camera.metering.center.weighted") {
+                        Toggle(isOn: $state.preserveSettings) {}
+                    }
+
+                    SettingsItem("Grid", icon: "grid") {
+                        Toggle(isOn: $state.gridEnabled) {}
+                    }
+
+                    SettingsItem("Scan QR Codes", icon: "qrcode.viewfinder") {
+                        Toggle(isOn: $state.scanQRCodes) {}
+                    }
+
+                    SettingsItem("Record Video", icon: "video") {
+                        Picker(selection: $state.recordVideoFormat) {
+                            Text("High Efficiency").tag(0)
+                            Text("Most Compatible").tag(1)
+                        } label: {}
+                    }
+
+                    SettingsItem("Record Stereo Audio", icon: "waveform") {
+                        Toggle(isOn: $state.recordStereoAudio) {}
+                    }
                 }
 
                 SettingsGroup("Control Center", systemImage: "switch.2") {

@@ -23,6 +23,22 @@ class SettingsState {
     var darkMode = false
     var autoJoinWiFi = true
 
+    // Accessibility
+    var voiceOverEnabled = false
+    var zoomEnabled = false
+    var displayAccommodations = false
+    var textSize: Double = 3.0 // 1-7 scale
+
+    // Action Button
+    var actionButtonFunction = 0 // 0: Silent Mode, 1: Camera, 2: Flashlight, 3: Voice Memo, 4: Shortcuts
+
+    // Camera
+    var preserveSettings = true
+    var gridEnabled = false
+    var scanQRCodes = true
+    var recordVideoFormat = 0 // 0: High Efficiency, 1: Most Compatible
+    var recordStereoAudio = true
+
     // Test input state
     var testToggle = false
     var testSlider = 0.5

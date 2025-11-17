@@ -46,7 +46,15 @@ public struct SidebarSettingsStyle: SettingsStyle {
     }
     
     public func makeItem(configuration: ItemConfiguration) -> some View {
-        configuration.content
+        HStack {
+            if let icon = configuration.icon {
+                Label(configuration.title, systemImage: icon)
+            } else {
+                Text(configuration.title)
+            }
+            Spacer()
+            configuration.content
+        }
     }
 }
 
