@@ -92,6 +92,11 @@ public struct SettingsGroup<Content: SettingsContent>: SettingsContent {
     public func makeNodes() -> [SettingsNode] {
         let children = content.makeNodes()
 
+        // Register the view builder for this group so search/navigation can render it
+        SettingsNodeViewRegistry.shared.register(id: id) { [content] in
+            AnyView(content.body)
+        }
+
         return [.group(
             id: id,
             title: title,

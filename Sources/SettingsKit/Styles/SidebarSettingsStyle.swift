@@ -94,10 +94,8 @@ private struct SidebarNavigationLink: View {
         NavigationLink {
             NavigationStack {
                 List {
-                    // Render from children nodes to get fresh views
-                    ForEach(configuration.children) { child in
-                        NodeView(node: child)
-                    }
+                    // Render directly from view hierarchy for proper state observation
+                    configuration.content
                 }
                 .navigationTitle(configuration.title)
             }
@@ -153,18 +151,15 @@ private struct SidebarContainer: View {
             NavigationStack(path: configuration.navigationPath) {
                 if let selectedGroup {
                     List {
-                        // Render from children nodes for proper state observation
-                        ForEach(selectedGroup.children) { child in
-                            NodeView(node: child)
-                        }
+                        // Render directly from view hierarchy for proper state observation
+                        selectedGroup.content
                     }
                     .navigationTitle(selectedGroup.title)
                     // Handle nested navigation (e.g., General → AirDrop)
                     .navigationDestination(for: SettingsGroupConfiguration.self) { nestedGroupConfig in
                         List {
-                            ForEach(nestedGroupConfig.children) { child in
-                                NodeView(node: child)
-                            }
+                            // Render directly from view hierarchy for proper state observation
+                            nestedGroupConfig.content
                         }
                         .navigationTitle(nestedGroupConfig.title)
                     }

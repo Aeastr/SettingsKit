@@ -101,20 +101,22 @@ public enum SettingsNode: Identifiable, Hashable, @unchecked Sendable {
     /// Converts this node to a SettingsGroupConfiguration for navigation.
     /// Only works for group nodes.
     public func asGroupConfiguration() -> SettingsGroupConfiguration {
-        guard case .group(_, let title, let icon, _, let presentation, let children) = self else {
+        guard case .group(let id, let title, let icon, _, let presentation, let children) = self else {
             fatalError("asGroupConfiguration() can only be called on group nodes")
         }
+
+        // Get the actual view content from the registry
+        let viewContent = SettingsNodeViewRegistry.shared.view(for: id) ?? AnyView(
+            Text("Content not available")
+                .foregroundStyle(.secondary)
+        )
 
         return SettingsGroupConfiguration(
             title: title,
             icon: icon,
             footer: nil,
             presentation: presentation,
-            content: AnyView(
-                ForEach(children) { child in
-                    NodeView(node: child)
-                }
-            ),
+            content: viewContent,
             children: children
         )
     }
