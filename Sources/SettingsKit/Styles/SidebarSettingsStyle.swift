@@ -35,18 +35,23 @@ private struct SidebarNavigationLink: View {
 
     var body: some View {
         // Always use destination-based navigation for fresh rendering!
-        // Each destination renders the fresh content
         NavigationLink {
-            // Wrap in NavigationStack to support further nesting
+#if os(macOS)
+            // On macOS: wrap in NavigationStack for nested navigation
             NavigationStack {
                 List {
                     configuration.content
                 }
                 .navigationTitle(configuration.title)
-#if !os(tvOS) && !os(macOS)
-                .navigationBarTitleDisplayMode(.inline)
-#endif
             }
+#else
+            // On iOS: let NavigationSplitView handle navigation
+            List {
+                configuration.content
+            }
+            .navigationTitle(configuration.title)
+            .navigationBarTitleDisplayMode(.inline)
+#endif
         } label: {
             configuration.label
         }
