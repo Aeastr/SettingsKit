@@ -60,7 +60,11 @@ public struct SidebarSettingsStyle: SettingsStyle {
     }
     
     public func makeItem(configuration: ItemConfiguration) -> some View {
-        configuration.content
+        HStack {
+            Text(configuration.title)
+            Spacer()
+            configuration.content
+        }
     }
 }
 
