@@ -6,29 +6,29 @@ import SwiftUI
 @resultBuilder
 public struct SettingsContentBuilder {
     @preconcurrency
-    public static func buildBlock(_ components: SettingsContent...) -> SettingsContentGroup {
+    public static func buildBlock(_ components: any SettingsContent...) -> SettingsContentGroup {
         SettingsContentGroup(Array(components))
     }
 
     @preconcurrency
-    public static func buildArray(_ components: [SettingsContent]) -> SettingsContentGroup {
+    public static func buildArray(_ components: [any SettingsContent]) -> SettingsContentGroup {
         SettingsContentGroup(components)
     }
 
-    public static func buildOptional(_ component: SettingsContent?) -> SettingsContent {
+    public static func buildOptional(_ component: (any SettingsContent)?) -> any SettingsContent {
         component ?? EmptySettingsContent()
     }
 
-    public static func buildEither(first component: SettingsContent) -> SettingsContent {
+    public static func buildEither(first component: any SettingsContent) -> any SettingsContent {
         component
     }
 
-    public static func buildEither(second component: SettingsContent) -> SettingsContent {
+    public static func buildEither(second component: any SettingsContent) -> any SettingsContent {
         component
     }
 
     @preconcurrency
-    public static func buildExpression(_ expression: SettingsContent) -> SettingsContent {
+    public static func buildExpression(_ expression: any SettingsContent) -> any SettingsContent {
         expression
     }
 
@@ -47,7 +47,7 @@ public struct SettingsContentBuilder {
     /// - Note: Arbitrary views are rendered but don't contribute to search/navigation.
     ///   Only `SettingsGroup` and `SettingsItem` are searchable.
     @preconcurrency
-    public static func buildExpression<V: View>(_ view: V) -> SettingsContent {
+    public static func buildExpression<V: View>(_ view: V) -> any SettingsContent {
         ViewWrapper(view)
     }
 }
@@ -56,9 +56,9 @@ public struct SettingsContentBuilder {
 
 /// Internal wrapper that groups multiple SettingsContent items
 public struct SettingsContentGroup: SettingsContent {
-    let items: [SettingsContent]
+    let items: [any SettingsContent]
 
-    public init(_ items: [SettingsContent]) {
+    public init(_ items: [any SettingsContent]) {
         self.items = items
     }
 

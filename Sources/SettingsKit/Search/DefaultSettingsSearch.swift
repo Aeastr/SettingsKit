@@ -97,7 +97,7 @@ public struct DefaultSettingsSearch: SettingsSearch {
             orderIndex += 1
 
             switch node {
-            case .group(let id, let title, let icon, let tags, let presentation, let children):
+            case .group(_, let title, _, let tags, let presentation, let children):
                 let groupMatches = title.lowercased().contains(query) ||
                                   tags.contains(where: { $0.lowercased().contains(query) })
 

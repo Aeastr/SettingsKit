@@ -57,7 +57,7 @@ struct SearchResultSection: View {
     @Binding var navigationPath: NavigationPath
 
     var body: some View {
-        if case .group(_, let title, let icon, _, _, let children) = result.group {
+        if case .group(_, let title, let icon, _, _, _) = result.group {
             Group {
                 if result.isNavigation {
                     // Navigation result: show as a single tappable row
@@ -134,7 +134,7 @@ struct NodeView: View {
 
     var body: some View {
         switch node {
-        case .group(_, let title, let icon, let tags, let presentation, let children):
+        case .group(_, let title, let icon, _, let presentation, let children):
             // Render group using the style system to respect inline/navigation presentation
             style.makeGroup(
                 configuration: SettingsGroupConfiguration(
