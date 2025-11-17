@@ -325,53 +325,102 @@ SettingsItem("Current Status", searchable: false) {
 
 ## How It Works
 
-SettingsKit uses a two-stage architecture to transform your declarative settings into a searchable, navigable interface.
+SettingsKit uses a hybrid architecture that combines **metadata-only nodes** for indexing and search with a **view registry system** for dynamic rendering. This design enables powerful search capabilities while maintaining live, reactive SwiftUI views with proper state observation.
+
+### The Hybrid Architecture
+
+SettingsKit separates concerns between **what** settings exist (metadata) and **how** they render (views):
+
+1. **Metadata Layer (Nodes)** - Lightweight tree structure for indexing and search
+2. **View Layer (Registry)** - Dynamic view builders registered by ID
+3. **Rendering Layer** - Direct SwiftUI view hierarchy with proper state observation
+
+This separation solves a critical challenge: making settings fully searchable while keeping interactive controls responsive and reactive.
 
 ### The Indexing System
 
-When you define settings using `SettingsGroup` and `SettingsItem`, SettingsKit builds an internal **node tree** that represents your entire settings hierarchy. This happens automatically and efficiently:
+When you define settings using `SettingsGroup` and `SettingsItem`, SettingsKit builds an internal **node tree** that represents your entire settings hierarchy:
 
 1. **Declarative Definition** - You write settings using SwiftUI-style syntax
-2. **Node Tree Building** - Each element converts to a `SettingsNode` (group or item)
-3. **Lazy Indexing** - The tree is built on-demand during rendering or searching
-4. **Search & Navigation** - The indexed tree powers both features
+2. **Node Tree Building** - Each element converts to a `SettingsNode` containing only metadata
+3. **View Registration** - Each item registers its view builder in the global registry
+4. **Lazy Indexing** - The tree is built on-demand during rendering or searching
+5. **Search & Navigation** - The indexed tree powers both features
 
-#### The Node Tree
+#### The Node Tree (Metadata-Only)
 
-Every setting becomes a node in an indexed tree:
+Every setting becomes a node in an indexed tree. **Crucially, nodes store only metadata—no views or content:**
 
 ```
 SettingsNode Tree:
 ├─ Group: "General" (navigation)
-│  ├─ Item: "Notifications"
-│  └─ Item: "Dark Mode"
+│  ├─ Item: "Notifications" → ID: abc123
+│  └─ Item: "Dark Mode" → ID: def456
 ├─ Group: "Appearance" (navigation)
-│  └─ Item: "Font Size"
+│  └─ Item: "Font Size" → ID: ghi789
 └─ Group: "Privacy & Security" (navigation)
-   └─ Item: "Auto Lock Delay"
+   └─ Item: "Auto Lock Delay" → ID: jkl012
 ```
 
 Each node stores:
-- **UUID** - Unique identifier for navigation and identity
-- **Title & Icon** - Display information
-- **Tags** - Additional keywords for search
-- **Presentation Mode** - Navigation link or inline section
+- **UUID** - Stable identifier (hash-based, not random) for navigation and registry lookup
+- **Title & Icon** - Display information for search results
+- **Tags** - Additional keywords for search discoverability
+- **Presentation Mode** - Navigation link or inline section (for groups)
 - **Children** - Nested groups and items (for groups)
+- **⚠️ No Content** - Views are NOT stored in nodes
+
+#### The View Registry
+
+The `SettingsNodeViewRegistry` is a global singleton that maps node IDs to view builder closures:
+
+```swift
+// When SettingsItem.makeNodes() is called:
+SettingsNodeViewRegistry.shared.register(id: itemID) {
+    AnyView(Toggle("Enable", isOn: $settings.notificationsEnabled))
+}
+
+// Later, in search results:
+if let view = SettingsNodeViewRegistry.shared.view(for: itemID) {
+    view  // Renders the actual Toggle with live state binding
+}
+```
+
+This registry allows search results to render **actual interactive controls** (Toggle, Slider, TextField, etc.) rather than static text labels.
 
 #### How Search Works
 
 The default search implementation uses intelligent scoring:
 
 1. **Normalization** - Removes spaces, special characters, converts to lowercase
-2. **Scoring** - Ranks matches by relevance:
+2. **Tree Traversal** - Recursively searches all nodes by title and tags
+3. **Scoring** - Ranks matches by relevance:
    - Exact match: 1000 points
    - Starts with: 500 points
    - Contains: 300 points
    - Tag match: 100 points
-3. **Tree Traversal** - Recursively searches all nodes
 4. **Result Grouping** - Groups matched items by their parent group
+5. **View Lookup** - Retrieves actual view builders from registry for matched items
 
-This means searching "notif" finds "Notifications", and tags like `["alerts", "sounds"]` make items discoverable through alternative keywords.
+When you search for "notif", it finds "Notifications" and renders the actual Toggle control with live state binding—not just a text label.
+
+#### Rendering Modes
+
+SettingsKit uses **two different rendering approaches** depending on context:
+
+**Normal Rendering (Direct Hierarchy)**:
+- Views render directly from the SwiftUI view hierarchy
+- Full state observation through SwiftUI's dependency tracking
+- Controls update reactively as state changes
+- No registry lookup needed
+
+**Search Results Rendering (Registry Lookup)**:
+- Matched items retrieve their view builders from the registry
+- Views are instantiated fresh for each search
+- State bindings remain live and reactive
+- Allows showing actual controls in search results
+
+This dual approach ensures optimal performance: normal navigation uses direct view hierarchies (fast), while search results use dynamic registry lookups (flexible).
 
 #### Navigation Architecture
 
@@ -380,9 +429,9 @@ SettingsKit provides two navigation styles that work with the same indexed tree:
 **Sidebar Style (NavigationSplitView)**:
 - Split-view layout with sidebar and detail pane
 - Top-level groups appear in the sidebar
-- Selection-based navigation
-- On macOS: detail pane has its own NavigationStack for nested groups
-- On iOS: uses NavigationSplitView's built-in navigation
+- Uses destination-based NavigationLink on macOS for proper control updates
+- Detail pane has its own NavigationStack for nested groups
+- On iOS: uses selection-based navigation (no control update issues)
 
 **Single Column Style (NavigationStack)**:
 - Push navigation for all groups
@@ -392,13 +441,95 @@ SettingsKit provides two navigation styles that work with the same indexed tree:
 
 The node tree's awareness of **navigation vs. inline presentation** ensures groups render correctly in both styles.
 
+#### Stable IDs
+
+Node UUIDs are generated using **hash-based stable IDs** rather than random UUIDs:
+
+```swift
+var hasher = Hasher()
+hasher.combine(title)
+hasher.combine(icon)
+let hashValue = hasher.finalize()
+// Convert hash to UUID bytes...
+```
+
+This ensures the same setting always gets the same ID across multiple `makeNodes()` calls, which is critical for:
+- Matching search results to actual views in the registry
+- Maintaining navigation state
+- View identity and animation stability
+
 ### Why This Design?
 
-- **Performance** - Lazy indexing builds the tree only when needed
-- **Dynamic Content** - Supports conditional settings (if/else, ForEach)
-- **Powerful Search** - Entire hierarchy is searchable with one index
-- **Extensibility** - Custom search and styles work with the same tree
-- **Type Safety** - SwiftUI result builders validate at compile time
+This hybrid architecture solves multiple challenges simultaneously:
+
+- **✅ Reactive Controls** - Direct view hierarchy preserves SwiftUI state observation
+- **✅ Powerful Search** - Metadata nodes enable fast, comprehensive search
+- **✅ Interactive Search Results** - Registry allows rendering actual controls in search
+- **✅ Performance** - Lazy indexing builds the tree only when needed
+- **✅ Dynamic Content** - Supports conditional settings (if/else, ForEach)
+- **✅ Platform Adaptive** - Navigation adapts to macOS vs iOS patterns
+- **✅ Extensibility** - Custom search and styles work with the same tree
+- **✅ Type Safety** - SwiftUI result builders validate at compile time
+
+### The Journey: From Problem to Solution
+
+The hybrid view registry architecture wasn't the original design—it emerged from solving a critical macOS bug. Here's how we got here:
+
+#### The Original Problem
+
+Early versions stored view content directly in nodes using `AnyView` type erasure. This worked fine initially, but revealed a **critical macOS-only bug**: when using `NavigationSplitView` with selection-based navigation, interactive controls (Toggle, Slider, TextField, etc.) in the detail pane stopped updating visually. State changed correctly, but the UI appeared frozen.
+
+#### Attempted Solutions
+
+We tried multiple approaches to fix the control update issue:
+
+1. **Force re-rendering with `.id()` modifier** ❌
+   - Adding unique IDs to force SwiftUI to rebuild views
+   - Didn't work because the problem was deeper in the view hierarchy
+
+2. **Repositioning `navigationDestination`** ❌
+   - Moving the navigation destination modifier to different locations
+   - No effect on control updates
+
+3. **Extracting separate `DetailContentView`** ❌
+   - Thought reducing view nesting might help
+   - Same issue persisted
+
+4. **Rendering from nodes instead of cached content** ❌
+   - Attempted to rebuild views from node metadata on each render
+   - Still had AnyView type erasure breaking state observation
+
+5. **Platform-specific navigation** ✅ (Partial)
+   - macOS: Destination-based `NavigationLink` (creates fresh view hierarchies)
+   - iOS: Selection-based `NavigationLink` (no issues observed)
+   - **Fixed control updates** but created a new problem: views rebuilt on every state change, causing TextField to lose focus on each keystroke
+
+#### The Root Cause
+
+The core issue was **AnyView type erasure combined with macOS NavigationSplitView's aggressive caching**. When content was wrapped in `AnyView` and passed through the node system, SwiftUI's dependency tracking broke down. macOS's NavigationSplitView appeared to cache detail content more aggressively than iOS, making the problem platform-specific.
+
+#### The Breakthrough
+
+The key insight came from asking: **"Can we have a hybrid system where we have nodes that we can grab *their* view for that particular node, and use it in search?"**
+
+This led to the current architecture:
+
+1. **Nodes become metadata-only** - No `AnyView` content stored in nodes
+2. **View registry maps IDs to builders** - Global singleton stores `UUID → () -> AnyView`
+3. **Normal rendering uses direct hierarchy** - No type erasure, full state observation
+4. **Search results use registry lookup** - Can render actual controls dynamically
+
+#### Why It Works
+
+This architecture solves the problem because:
+
+- **No AnyView in normal paths** - Direct view hierarchy preserves SwiftUI's state dependency tracking
+- **Platform-specific navigation is isolated** - macOS workaround doesn't affect iOS
+- **Search gets actual views** - Registry lookup provides real controls, not just metadata
+- **Stable IDs enable matching** - Hash-based UUIDs ensure registry lookups succeed
+- **View identity is stable** - No more TextField losing focus from unnecessary rebuilds
+
+The hybrid approach gives us the best of both worlds: searchable metadata trees + reactive SwiftUI views.
 
 ## Platform Differences
 
