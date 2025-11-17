@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The default settings style with standard navigation and list appearance.
-public struct DefaultSettingsStyle: SettingsStyle {
+/// A single-column settings style with standard navigation and list appearance.
+public struct SingleColumnSettingsStyle: SettingsStyle {
     public init() {}
 
     public func makeContainer(configuration: ContainerConfiguration) -> some View {

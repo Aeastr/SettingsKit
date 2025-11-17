@@ -142,7 +142,7 @@ public struct SettingsItemConfiguration: @unchecked Sendable {
 
 /// Environment key for settings style.
 struct SettingsStyleKey: EnvironmentKey {
-    static let defaultValue: AnySettingsStyle = AnySettingsStyle(DefaultSettingsStyle())
+    static let defaultValue: AnySettingsStyle = AnySettingsStyle(SidebarSettingsStyle())
 }
 
 extension EnvironmentValues {
@@ -196,30 +196,16 @@ public extension View {
 
 // MARK: - Static Convenience
 
-public extension SettingsStyle where Self == DefaultSettingsStyle {
-    /// The default settings style.
-    static var `default`: DefaultSettingsStyle {
-        DefaultSettingsStyle()
-    }
-}
-
 public extension SettingsStyle where Self == SidebarSettingsStyle {
-    /// A settings style with sidebar navigation.
+    /// A settings style with sidebar navigation (default).
     static var sidebar: SidebarSettingsStyle {
         SidebarSettingsStyle()
     }
 }
 
-public extension SettingsStyle where Self == GroupedSettingsStyle {
-    /// A settings style with grouped appearance.
-    static var grouped: GroupedSettingsStyle {
-        GroupedSettingsStyle()
-    }
-}
-
-public extension SettingsStyle where Self == CardSettingsStyle {
-    /// A settings style with card-based appearance.
-    static var card: CardSettingsStyle {
-        CardSettingsStyle()
+public extension SettingsStyle where Self == SingleColumnSettingsStyle {
+    /// A single-column settings style.
+    static var single: SingleColumnSettingsStyle {
+        SingleColumnSettingsStyle()
     }
 }
