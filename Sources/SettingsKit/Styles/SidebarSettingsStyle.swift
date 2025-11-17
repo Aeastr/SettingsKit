@@ -2,47 +2,39 @@ import SwiftUI
 
 /// A settings style using a split view with sidebar navigation.
 ///
-/// ## Navigation Architecture & Known Issues
+/// ## Navigation Architecture
 ///
-/// This style uses different navigation approaches on macOS vs iOS due to a platform-specific SwiftUI issue.
+/// This style uses different navigation approaches on macOS vs iOS to provide optimal behavior on each platform.
 ///
-/// ### The Observed Problem
-/// On **macOS only**, when using selection-based navigation with `NavigationSplitView`:
-/// - Controls (Toggle, Slider, TextField, etc.) in the detail view don't visually update when interacted with
-/// - The underlying state **does** change correctly (verified by watching state values in the sidebar)
-/// - The sidebar renders updates properly, proving state propagation works
-/// - The detail view simply fails to re-render when state changes
-///
-/// ### Suspected Root Causes (Unconfirmed)
-/// The issue appears related to how content is stored and rendered:
-/// 1. **AnyView type erasure**: Content is wrapped in `AnyView` for type erasure in the node/configuration system
-/// 2. **Node-based rendering**: We render from cached node content rather than directly from the view hierarchy
-/// 3. **macOS NavigationSplitView caching**: macOS may aggressively cache detail column content in ways iOS doesn't
-///
-/// **Note**: The `refactor/nodes-metadata-only` branch explores removing `AnyView` content from nodes entirely,
-/// making them metadata-only for indexing/search and rendering directly from the view hierarchy instead.
-/// This architectural change may resolve the root cause but requires significant refactoring.
-///
-/// ### The Current Solution (Platform-Specific Workaround)
+/// ### Platform-Specific Navigation
 ///
 /// **macOS:**
 /// - Uses **destination-based** `NavigationLink` with nested `NavigationStack` in each destination
-/// - Each navigation creates a fresh view hierarchy, bypassing the caching issue
-/// - Controls update properly ✅
+/// - Each navigation creates a fresh view hierarchy with proper state observation
+/// - Controls update reactively ✅
 /// - Nested navigation works (General → AirDrop pushes correctly) ✅
 /// - Works because macOS sidebar is always visible, so destination-based links push into detail column
 ///
 /// **iOS/iPadOS:**
 /// - Uses **selection-based** `NavigationLink(value:)` with centralized detail view
-/// - No control update issues on iOS (SwiftUI handles this better on mobile platforms)
+/// - Selection-based navigation works seamlessly on iOS
 /// - Works in both portrait (sidebar collapsed) and landscape (sidebar visible) ✅
 /// - Rotation doesn't reset navigation since we always use the same approach ✅
 ///
-/// ### Tradeoffs & Future Work
-/// - This is a **workaround** that treats symptoms rather than addressing the root cause
-/// - Maintaining two different navigation paradigms adds complexity and platform-specific code
-/// - A proper fix likely requires architectural changes (see `refactor/nodes-metadata-only` branch)
-///   to eliminate `AnyView` wrappers and render directly from the view hierarchy
+/// ### Why Platform-Specific?
+///
+/// Early versions used the same navigation approach on all platforms, which revealed a critical macOS-only bug:
+/// controls in the detail view wouldn't visually update even though state changed correctly. This was caused by
+/// **AnyView type erasure combined with macOS NavigationSplitView's aggressive caching**.
+///
+/// The solution was to:
+/// 1. Remove content from nodes entirely (metadata-only nodes)
+/// 2. Use direct view hierarchy rendering (no AnyView in normal paths)
+/// 3. Create a view registry for search results
+/// 4. Use destination-based navigation on macOS (fresh view hierarchies)
+///
+/// This hybrid architecture solved the problem: normal navigation uses direct view hierarchies preserving
+/// SwiftUI's state observation, while search results use the view registry to render actual interactive controls.
 ///
 public struct SidebarSettingsStyle: SettingsStyle {
     public init() {}
@@ -75,8 +67,8 @@ public struct SidebarSettingsStyle: SettingsStyle {
 // Custom navigation link that adapts based on platform
 //
 // NAVIGATION APPROACH:
-// - macOS: destination-based (fixes control update bug)
-// - iOS: selection-based (works properly, no bugs)
+// - macOS: destination-based (creates fresh view hierarchies)
+// - iOS: selection-based (optimal for split view behavior)
 private struct SidebarNavigationLink: View {
     let configuration: SettingsGroupConfiguration
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -84,23 +76,20 @@ private struct SidebarNavigationLink: View {
     var body: some View {
 #if os(macOS)
         // macOS: Use destination-based navigation
-        // WHY: Works around the control update bug where selection-based navigation causes
-        //      controls in the detail view to not visually update (though state changes correctly)
-        // SUSPECTED CAUSE: Combination of AnyView type erasure + macOS NavigationSplitView caching
+        // WHY: Creates fresh view hierarchies with proper state observation
+        //      Part of the hybrid architecture solution (see file header)
         destinationBasedLink
 #else
         // iOS/iPadOS: Use selection-based navigation
-        // WHY: Destination-based doesn't work with NavigationSplitView on iOS
-        //      (attempts to push to a non-existent third column)
-        // NOTE: iOS doesn't exhibit the control update issue that macOS has
+        // WHY: Optimal for NavigationSplitView on iOS (works in all size classes)
+        //      Handles portrait/landscape transitions smoothly
         selectionBasedLink
 #endif
     }
 
     // DESTINATION-BASED NAVIGATION (macOS only)
     // Creates a fresh NavigationStack for each destination.
-    // This works around the control update bug by creating fresh view instances rather than
-    // rendering from cached node content in a selection-based detail view.
+    // Provides proper state observation as part of the hybrid architecture.
     private var destinationBasedLink: some View {
         NavigationLink {
             NavigationStack {
