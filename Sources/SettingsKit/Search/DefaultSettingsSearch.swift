@@ -97,9 +97,10 @@ public struct DefaultSettingsSearch: SettingsSearch {
             orderIndex += 1
 
             switch node {
-            case .group(let id, let title, let icon, let tags, let presentation, let children):
-                let groupMatches = title.lowercased().contains(query) ||
-                                  tags.contains(where: { $0.lowercased().contains(query) })
+            case .group(_, let title, _, let tags, let presentation, let children):
+                let normalizedQuery = normalize(query)
+                let groupMatches = normalize(title).contains(normalizedQuery) ||
+                                  tags.contains(where: { normalize($0).contains(normalizedQuery) })
 
                 let isLeafGroup = children.allSatisfy { !$0.isGroup }
 
@@ -111,8 +112,8 @@ public struct DefaultSettingsSearch: SettingsSearch {
                     // Leaf group: check if group or any searchable children match
                     let searchableChildren = children.filter { $0.isSearchable }
                     let childMatches = searchableChildren.contains { child in
-                        child.title.lowercased().contains(query) ||
-                        child.tags.contains(where: { $0.lowercased().contains(query) })
+                        normalize(child.title).contains(normalizedQuery) ||
+                        child.tags.contains(where: { normalize($0).contains(normalizedQuery) })
                     }
 
                     // Only add navigation groups as leaf results, skip inline groups

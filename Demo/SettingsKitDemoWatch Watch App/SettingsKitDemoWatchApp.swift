@@ -1,16 +1,21 @@
+//
+//  SettingsKitDemoWatchApp.swift
+//  SettingsKitDemoWatch Watch App
+//
+//  Created by Aether on 11/17/25.
+//
+
 import SwiftUI
 import SettingsKit
 
 @main
-struct SettingsKitDemoApp: App {
+struct SettingsKitDemoWatch_Watch_AppApp: App {
     @State private var settings = SettingsState()
-//    @State private var stressTest = StressTestSettings()
-    
+
     var body: some Scene {
         WindowGroup {
             DemoSettings()
                 .environment(settings)
-//            StressTestSettingsContainer(settings: stressTest)
         }
     }
 }

@@ -296,7 +296,7 @@ struct NodeView: View {
 
     var body: some View {
         switch node {
-        case .group(_, let title, let icon, let tags, let presentation, let children):
+        case .group(_, let title, let icon, _, let presentation, let children):
             // Render group using the style system to respect inline/navigation presentation
             style.makeGroup(
                 configuration: SettingsGroupConfiguration(
