@@ -10,7 +10,7 @@ import ShortcutsGallery
 
 struct ExampleShortcutsGallery: View {
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ShortcutsGallery {
                 // Pinned groups at the top
                 ShortcutGroup(

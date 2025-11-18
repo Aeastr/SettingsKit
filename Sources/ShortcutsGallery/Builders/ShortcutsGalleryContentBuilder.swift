@@ -10,8 +10,8 @@ import SwiftUI
 /// Result builder for creating gallery content (groups and sections)
 @resultBuilder
 public struct ShortcutsGalleryContentBuilder {
-    public static func buildBlock(_ components: ShortcutsGalleryContent...) -> [ShortcutsGalleryContent] {
-        components
+    public static func buildBlock(_ components: [ShortcutsGalleryContent]...) -> [ShortcutsGalleryContent] {
+        components.flatMap { $0 }
     }
 
     public static func buildArray(_ components: [[ShortcutsGalleryContent]]) -> [ShortcutsGalleryContent] {

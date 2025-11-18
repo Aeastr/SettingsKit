@@ -10,8 +10,8 @@ import SwiftUI
 /// Result builder for creating arrays of ShortcutSections
 @resultBuilder
 public struct ShortcutSectionBuilder {
-    public static func buildBlock(_ components: ShortcutSection...) -> [ShortcutSection] {
-        components
+    public static func buildBlock(_ components: [ShortcutSection]...) -> [ShortcutSection] {
+        components.flatMap { $0 }
     }
 
     public static func buildArray(_ components: [[ShortcutSection]]) -> [ShortcutSection] {

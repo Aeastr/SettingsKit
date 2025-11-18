@@ -113,7 +113,7 @@ private struct GroupCardView: View {
             .cornerRadius(12)
         }
         .sheet(isPresented: $showingSheet) {
-            NavigationView {
+            NavigationStack {
                 GroupDetailView(group: group)
             }
         }
