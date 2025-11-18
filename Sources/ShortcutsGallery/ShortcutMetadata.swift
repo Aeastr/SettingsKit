@@ -54,13 +54,16 @@ extension ShortcutMetadata {
     ]
 
     func gradient(mode: ColorMode = .base) -> LinearGradient {
-        guard let colors = Self.colorMap[iconColor] else {
+        // Normalize negative values by taking absolute value
+        let normalizedColor = abs(iconColor)
+
+        guard let colors = Self.colorMap[normalizedColor] else {
             return LinearGradient(colors: [.gray], startPoint: .bottom, endPoint: .top)
         }
-
+        
         let topColor: Color
         let bottomColor: Color
-
+        
         switch mode {
         case .base:
             topColor = Color(hex: colors.baseTop)
@@ -72,7 +75,7 @@ extension ShortcutMetadata {
             topColor = Color(lightHex: colors.baseTop, darkHex: colors.darkTop)
             bottomColor = Color(lightHex: colors.baseBottom, darkHex: colors.darkBottom)
         }
-
+        
         return LinearGradient(
             colors: [bottomColor, topColor],
             startPoint: .bottom,
@@ -83,7 +86,7 @@ extension ShortcutMetadata {
 
 extension Color {
     init(lightHex: String, darkHex: String) {
-        #if canImport(UIKit)
+#if canImport(UIKit)
         self.init(UIColor { traitCollection in
             if traitCollection.userInterfaceStyle == .dark {
                 return UIColor(hex: darkHex)
@@ -91,7 +94,7 @@ extension Color {
                 return UIColor(hex: lightHex)
             }
         })
-        #else
+#else
         self.init(NSColor(name: nil) { appearance in
             if appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua {
                 return NSColor(hex: darkHex)
@@ -99,16 +102,16 @@ extension Color {
                 return NSColor(hex: lightHex)
             }
         })
-        #endif
+#endif
     }
-
+    
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&int)
         let r, g, b: UInt64
         (r, g, b) = ((int >> 16) & 0xFF, (int >> 8) & 0xFF, int & 0xFF)
-
+        
         self.init(
             .sRGB,
             red: Double(r) / 255,
@@ -126,7 +129,7 @@ extension UIColor {
         Scanner(string: hex).scanHexInt64(&int)
         let r, g, b: UInt64
         (r, g, b) = ((int >> 16) & 0xFF, (int >> 8) & 0xFF, int & 0xFF)
-
+        
         self.init(
             red: CGFloat(r) / 255,
             green: CGFloat(g) / 255,
@@ -143,7 +146,7 @@ extension NSColor {
         Scanner(string: hex).scanHexInt64(&int)
         let r, g, b: UInt64
         (r, g, b) = ((int >> 16) & 0xFF, (int >> 8) & 0xFF, int & 0xFF)
-
+        
         self.init(
             red: CGFloat(r) / 255,
             green: CGFloat(g) / 255,
@@ -188,23 +191,23 @@ struct ShortcutMetadataService {
         guard let shortcutID = extractShortcutID(from: iCloudLink) else {
             throw URLError(.badURL)
         }
-
+        
         // Build API URL
         let apiURL = "https://www.icloud.com/shortcuts/api/records/\(shortcutID)"
-
+        
         guard let url = URL(string: apiURL) else {
             throw URLError(.badURL)
         }
-
+        
         let (data, response) = try await URLSession.shared.data(from: url)
-
+        
         guard let httpResponse = response as? HTTPURLResponse,
               httpResponse.statusCode == 200 else {
             throw URLError(.badServerResponse)
         }
-
+        
         let cloudKitResponse = try JSONDecoder().decode(CloudKitResponse.self, from: data)
-
+        
         return ShortcutMetadata(
             id: cloudKitResponse.recordName,
             name: cloudKitResponse.fields.name.value,
@@ -214,23 +217,23 @@ struct ShortcutMetadataService {
             iCloudLink: normalizeShortcutURL(iCloudLink)
         )
     }
-
+    
     private func extractShortcutID(from link: String) -> String? {
         // Extract the ID from URLs like:
         // https://www.icloud.com/shortcuts/e6d68e32ffad4e39b3e43940c030db3b
         // or https://www.icloud.com/shortcuts/api/records/e6d68e32ffad4e39b3e43940c030db3b
         guard let url = URL(string: link) else { return nil }
         let path = url.path
-
+        
         // If it's an API URL, extract the ID after "records/"
         if path.contains("/api/records/") {
             return path.components(separatedBy: "/api/records/").last
         }
-
+        
         // Otherwise just get the last path component
         return url.lastPathComponent
     }
-
+    
     private func normalizeShortcutURL(_ link: String) -> String {
         // Convert API URLs back to regular iCloud links
         // from: https://www.icloud.com/shortcuts/api/records/ABC123
@@ -249,13 +252,13 @@ struct ShortcutMetadataService {
 public struct ShortcutsGalleryView: View {
     @StateObject private var viewModel = ShortcutGalleryViewModel()
     @State private var colorMode: ColorMode = .base
-
+    
     let columns = [
         GridItem(.adaptive(minimum: 150, maximum: 200), spacing: 16)
     ]
-
+    
     public init(){}
-
+    
     public var body: some View {
         TabView {
             NavigationStack {
@@ -305,7 +308,7 @@ public struct ShortcutsGalleryView: View {
             .tabItem {
                 Label("Gallery", systemImage: "square.grid.2x2")
             }
-
+            
             ColorMappingDebugView()
                 .tabItem {
                     Label("Colors", systemImage: "paintpalette")
@@ -315,83 +318,99 @@ public struct ShortcutsGalleryView: View {
 }
 
 struct ShortcutCardView: View {
-    let shortcut: ShortcutMetadata
+    let iCloudLink: String
     let colorMode: ColorMode
+    @State private var shortcut: ShortcutMetadata?
     @State private var iconImage: Image?
-
+    
+    init(shortcut: ShortcutMetadata, colorMode: ColorMode = .system) {
+        self.iCloudLink = shortcut.iCloudLink
+        self.colorMode = colorMode
+        self._shortcut = State(initialValue: shortcut)
+    }
+    
+    init(shortcut: Shortcut, colorMode: ColorMode = .system) {
+        self.iCloudLink = shortcut.iCloudLink
+        self.colorMode = colorMode
+        // Shortcut only has iCloudLink, so we always need to fetch metadata
+        self._shortcut = State(initialValue: nil)
+    }
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Icon with color background
-            ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(shortcut.gradient(mode: colorMode))
-
-                VStack(alignment: .leading) {
-                    // Icon in top-left
+        Group {
+            VStack(alignment: .leading) {
+                // Icon in top-left - reserve space even if no image
+                Group {
                     if let iconImage = iconImage {
                         iconImage
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 44, height: 44)
-                            .foregroundColor(.white)
                     } else {
-                        // Fallback to SF Symbol
-                        Image(systemName: "square.grid.2x2")
-                            .font(.system(size: 32))
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
+                        Color.clear
                     }
-
-                    Spacer()
-
-                    // Shortcut name at bottom
-                    Text(shortcut.name)
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
                 }
-                .padding(20)
-
-                // Three dots menu in top-right
-                VStack {
-                    HStack {
-                        Spacer()
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(20)
-                    }
-                    Spacer()
-                }
+                .frame(width: 25, height: 25)
+                .clipShape(.rect(cornerRadius: 6))
+                
+                Spacer()
+                
+                // Shortcut name at bottom
+                let name = shortcut?.name ?? ""
+                Text(name)
+                    .font(.body)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            
             .aspectRatio(1.5, contentMode: .fit)
+            .background(shortcut?.gradient(mode: colorMode))
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+            
         }
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
         .task {
-            await loadIcon()
+            await loadMetadataAndIcon()
         }
     }
     
-    private func loadIcon() async {
-        guard let urlString = shortcut.iconURL,
-              let url = URL(string: urlString) else {
+    private func loadMetadataAndIcon() async {
+        // Add a small random delay to stagger API requests
+        try? await Task.sleep(nanoseconds: UInt64.random(in: 100_000_000...500_000_000)) // 0.1-0.5 seconds
+        
+        // Fetch metadata if we don't have it
+        if shortcut == nil {
+            do {
+                let service = ShortcutMetadataService()
+                let metadata = try await service.fetchMetadata(from: iCloudLink)
+                shortcut = metadata
+            } catch {
+                print("Failed to fetch metadata for \(iCloudLink): \(error)")
+                return
+            }
+        }
+        
+        // Now load the icon
+        guard let iconURLString = shortcut?.iconURL,
+              let url = URL(string: iconURLString) else {
             return
         }
         
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
-            #if os(iOS)
+#if os(iOS)
             if let uiImage = UIImage(data: data) {
                 iconImage = Image(uiImage: uiImage)
             }
-            #else
+#else
             if let nsImage = NSImage(data: data) {
                 iconImage = Image(nsImage: nsImage)
             }
-            #endif
+#endif
         } catch {
             print("Failed to load icon: \(error)")
         }
@@ -410,36 +429,29 @@ final class ShortcutGalleryViewModel: ObservableObject {
     
     // Add your shortcut URLs here!
     let shortcutLinks = [
-        "https://www.icloud.com/shortcuts/162c114586f948cba928d8b8656cd6c3",
-        "https://www.icloud.com/shortcuts/74d08bf1b58c454b858fa24b29ca6178",
-        "https://www.icloud.com/shortcuts/521e21925f544ee6a537d5255f797ff8",
-        "https://www.icloud.com/shortcuts/d2f0cbb13f03424eb72d62d77c94b455",
-        "https://www.icloud.com/shortcuts/a528f1d54b2e4f3d895b043ed4edf4fb",
-        "https://www.icloud.com/shortcuts/fabd5267f343499297c548b5444ae954",
-        "https://www.icloud.com/shortcuts/33ce1284615b475bb8e8e03a55eb73d0",
-        "https://www.icloud.com/shortcuts/06714b9479944f51b0dcf4fe28f4efa2",
-        "https://www.icloud.com/shortcuts/dc7315a2bbde45008b489626b045aac0",
-        "https://www.icloud.com/shortcuts/beea95ffb8a44b5e93d2b0e5f10b2669",
-        "https://www.icloud.com/shortcuts/e82f980435534e828430583b14c1ead2",
-        "https://www.icloud.com/shortcuts/a46df30ceaea44c6b0ce26451c635221",
-        "https://www.icloud.com/shortcuts/02ead42f3c1a4d45ad07f36e65cdce98",
-        "https://www.icloud.com/shortcuts/b8ac685625e04cac8cece16cfd9459fd",
-        "https://www.icloud.com/shortcuts/c4617cbf1a1f4908a0031540b1e71516"
-     
+        "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f",
+        "https://www.icloud.com/shortcuts/d598f4dc52d9469f9161b302f1257350",
+        "https://www.icloud.com/shortcuts/51a9b025884545e7b7a4c9f3d3c86e35",
+        "https://www.icloud.com/shortcuts/85cff63584314ae48ad2c7a8bacc1733",
+        "https://www.icloud.com/shortcuts/19a26fc124ec413788a4a72720e58b6f",
+        "https://www.icloud.com/shortcuts/005a1482aa654f1cb874fd6443b0593a",
+        "https://www.icloud.com/shortcuts/bb87343631e84c2bb1f4dabf46e4aae2",
+        "https://www.icloud.com/shortcuts/891705370975472b880c72860a05b221",
+        "https://www.icloud.com/shortcuts/7557e130f1be4ceba01e69e6b065bacf"
     ]
-//
+    //
     func loadShortcuts() async {
         isLoading = true
         shortcuts = []
         error = nil
         defer { isLoading = false }
-
+        
         // Sequential fetching for now to debug
         for link in shortcutLinks {
             do {
                 let metadata = try await service.fetchMetadata(from: link)
                 shortcuts.append(metadata)
-
+                
                 // Log the shortcut info
                 let colorName = getColorName(for: metadata.iconColor)
                 print("📱 '\(metadata.name)' -> \(colorName) (iconColor: \(metadata.iconColor))")
@@ -447,11 +459,11 @@ final class ShortcutGalleryViewModel: ObservableObject {
                 print("Failed to fetch \(link): \(error)")
             }
         }
-
+        
         // Sort by name
         shortcuts.sort { $0.name < $1.name }
     }
-
+    
     private func getColorName(for iconColor: Int64) -> String {
         let colorNames: [Int64: String] = [
             4282601983: "Red",
@@ -479,7 +491,7 @@ final class ShortcutGalleryViewModel: ObservableObject {
             3980825855: "Pink (alt)",
             4251333119: "Dark orange (alt)",
         ]
-
+        
         return colorNames[iconColor] ?? "Unknown (\(iconColor))"
     }
 }
@@ -513,7 +525,7 @@ struct ColorMappingDebugView: View {
         (1448498689, "Brown", "cdb799", "baa487", "a4916e", "96836c"),
         (2846468607, "Brown (alt)", "cdb799", "baa487", "a4916e", "96836c"),
     ]
-
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -532,12 +544,12 @@ struct ColorMappingDebugView: View {
                                             endPoint: .top
                                         ))
                                         .frame(height: 60)
-
+                                    
                                     Text("Base")
                                         .font(.caption2)
                                         .foregroundColor(.secondary)
                                 }
-
+                                
                                 VStack(spacing: 4) {
                                     RoundedRectangle(cornerRadius: 8)
                                         .fill(LinearGradient(
@@ -546,26 +558,26 @@ struct ColorMappingDebugView: View {
                                             endPoint: .top
                                         ))
                                         .frame(height: 60)
-
+                                    
                                     Text("Dark")
                                         .font(.caption2)
                                         .foregroundColor(.secondary)
                                 }
                             }
-
+                            
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(mapping.name)
                                     .font(.headline)
                                     .lineLimit(1)
-
+                                
                                 Text("\(mapping.value)")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
-
+                                
                                 Text("B: #\(mapping.baseBottom) → #\(mapping.baseTop)")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
-
+                                
                                 Text("D: #\(mapping.darkBottom) → #\(mapping.darkTop)")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
@@ -581,16 +593,16 @@ struct ColorMappingDebugView: View {
             .navigationTitle("Color Mappings")
         }
     }
-
+    
     func rgbString(for hex: String) -> String {
         let scanner = Scanner(string: hex)
         var rgbValue: UInt64 = 0
         scanner.scanHexInt64(&rgbValue)
-
+        
         let r = (rgbValue & 0xFF0000) >> 16
         let g = (rgbValue & 0x00FF00) >> 8
         let b = rgbValue & 0x0000FF
-
+        
         return "RGB(\(r), \(g), \(b))"
     }
 }

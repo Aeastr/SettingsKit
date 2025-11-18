@@ -65,7 +65,7 @@ public struct DefaultShortcutsGalleryStyle: ShortcutsGalleryStyle {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(section.shortcuts) { shortcut in
-                        GalleryShortcutCard(shortcut: shortcut)
+                        ShortcutCardView(shortcut: shortcut)
                             .frame(width: 150)
                     }
                 }
@@ -173,30 +173,11 @@ private struct GroupDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(section.shortcuts) { shortcut in
-                        GalleryShortcutCard(shortcut: shortcut)
+                        ShortcutCardView(shortcut: shortcut)
                             .frame(width: 150)
                     }
                 }
             }
-        }
-    }
-}
-
-// MARK: - Shortcut Card View
-
-private struct GalleryShortcutCard: View {
-    let shortcut: Shortcut
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.blue.gradient)
-                .frame(height: 100)
-
-            Text(shortcut.name.isEmpty ? "Shortcut" : shortcut.name)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .lineLimit(2)
         }
     }
 }

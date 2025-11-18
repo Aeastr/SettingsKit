@@ -8,37 +8,16 @@
 import SwiftUI
 
 /// Represents an individual shortcut that can be displayed in the gallery
+/// Users only provide the iCloud link - all metadata is fetched automatically
 public struct Shortcut: Identifiable, Sendable {
     public let id: String
-    public let name: String
     public let iCloudLink: String
-    public let iconColor: Int64
-    public let iconGlyph: Int64
-    public let iconURL: String?
 
-    public init(
-        id: String? = nil,
-        name: String,
-        iCloudLink: String,
-        iconColor: Int64,
-        iconGlyph: Int64,
-        iconURL: String? = nil
-    ) {
-        self.id = id ?? iCloudLink
-        self.name = name
-        self.iCloudLink = iCloudLink
-        self.iconColor = iconColor
-        self.iconGlyph = iconGlyph
-        self.iconURL = iconURL
-    }
-
-    /// Convenience initializer for when metadata will be fetched from iCloud
+    /// Create a shortcut from an iCloud share link
+    /// The shortcut's name, icon, and color will be fetched automatically from Apple's servers
+    /// - Parameter iCloudLink: The iCloud share URL (e.g., "https://www.icloud.com/shortcuts/abc123")
     public init(iCloudLink: String) {
-        self.id = iCloudLink
-        self.name = ""
         self.iCloudLink = iCloudLink
-        self.iconColor = 0
-        self.iconGlyph = 0
-        self.iconURL = nil
+        self.id = iCloudLink
     }
 }

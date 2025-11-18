@@ -11,11 +11,11 @@ import SwiftUI
 @resultBuilder
 public struct ShortcutBuilder {
     public static func buildBlock(_ components: [Shortcut]...) -> [Shortcut] {
-        components.flatMap { $0 }
+        Array(components.joined())
     }
 
     public static func buildArray(_ components: [[Shortcut]]) -> [Shortcut] {
-        components.flatMap { $0 }
+        Array(components.joined())
     }
 
     public static func buildOptional(_ component: [Shortcut]?) -> [Shortcut] {
