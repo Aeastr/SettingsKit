@@ -17,6 +17,7 @@ targets:
       - path: Sources
     dependencies:
       - package: SettingsKit
+      - package: ShortcutsGallery
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.settingskit.demo
       INFOPLIST_FILE: Info.plist

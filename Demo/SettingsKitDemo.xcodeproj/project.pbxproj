@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		2DF8F67A2ECB645D00843178 /* SettingsKitDemoWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 2DF8F6792ECB645D00843178 /* SettingsKitDemoWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2DF8F6AB2ECB659E00843178 /* SettingsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2DF8F6AA2ECB659E00843178 /* SettingsKit */; };
+		2DF8F6EF2ECBF4D900843178 /* ShortcutsGallery in Frameworks */ = {isa = PBXBuildFile; productRef = 2DF8F6EE2ECBF4D900843178 /* ShortcutsGallery */; };
 		DFA8673A0677C29373B338A4 /* SettingsKit in Frameworks */ = {isa = PBXBuildFile; productRef = A3312EA1728BA1C83C1377EF /* SettingsKit */; };
 /* End PBXBuildFile section */
 
@@ -72,6 +73,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DFA8673A0677C29373B338A4 /* SettingsKit in Frameworks */,
+				2DF8F6EF2ECBF4D900843178 /* ShortcutsGallery in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -177,6 +179,7 @@
 			name = SettingsKitDemo;
 			packageProductDependencies = (
 				A3312EA1728BA1C83C1377EF /* SettingsKit */,
+				2DF8F6EE2ECBF4D900843178 /* ShortcutsGallery */,
 			);
 			productName = SettingsKitDemo;
 			productReference = 1E4CBF1BBD860C0B17DAC096 /* SettingsKitDemo.app */;
@@ -643,6 +646,10 @@
 		2DF8F6AA2ECB659E00843178 /* SettingsKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SettingsKit;
+		};
+		2DF8F6EE2ECBF4D900843178 /* ShortcutsGallery */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ShortcutsGallery;
 		};
 		A3312EA1728BA1C83C1377EF /* SettingsKit */ = {
 			isa = XCSwiftPackageProductDependency;
