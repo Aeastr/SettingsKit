@@ -8,7 +8,7 @@ struct SettingsKitDemoApp: App {
     
     var body: some Scene {
         WindowGroup {
-            DemoSettings()
+            ShortcutsGalleryView()
                 .environment(settings)
 //            StressTestSettingsContainer(settings: stressTest)
         }
