@@ -654,6 +654,261 @@ This architecture solves the problem because:
 
 The hybrid approach gives us the best of both worlds: searchable metadata trees + reactive SwiftUI views.
 
+## SettingsKitPortable
+
+SettingsKitPortable is a separate target that adds settings export and import functionality. Users can back up their settings to a `.settings` file and restore them later or transfer to another device.
+
+### Features
+
+- **ZIP-based format** - Settings are packaged as compressed archives with JSON data
+- **UserDefaults built-in** - Export/import `@AppStorage` and `UserDefaults` out of the box
+- **Custom data sources** - Protocol-based architecture for Keychain, Core Data, or any storage backend
+- **Preview before import** - See what will change before committing
+- **Conflict handling** - Choose overwrite, keep existing, merge, or fail on conflicts
+- **Comprehensive errors** - Typed errors with user-friendly messages, no silent failures
+- **Customizable format** - Use your own file extension and UTI
+
+### Installation
+
+Add SettingsKitPortable to your target dependencies:
+
+```swift
+dependencies: [
+    .product(name: "SettingsKitPortable", package: "SettingsKit")
+]
+```
+
+### Basic Usage
+
+#### Exporting Settings
+
+```swift
+import SettingsKitPortable
+
+let source = UserDefaultsDataSource()
+let config = SettingsExportConfiguration(
+    sources: [source],
+    appIdentifier: Bundle.main.bundleIdentifier ?? "com.example.app",
+    appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+)
+
+do {
+    let result = try await SettingsPortable.exportSettings(
+        configuration: config,
+        to: destinationURL
+    )
+    print("Exported \(result.exportedCount) settings")
+} catch let error as SettingsPortableError {
+    print("Export failed: \(error.errorDescription ?? "")")
+}
+```
+
+#### Importing Settings
+
+```swift
+let config = SettingsImportConfiguration(
+    sources: [UserDefaultsDataSource()],
+    conflictStrategy: .overwrite  // or .keepExisting, .merge, .failOnConflict
+)
+
+do {
+    let result = try await SettingsPortable.importSettings(
+        from: sourceURL,
+        configuration: config
+    )
+    print("Imported \(result.importedCount) settings")
+} catch let error as SettingsPortableError {
+    print("Import failed: \(error.errorDescription ?? "")")
+}
+```
+
+#### Preview Before Import
+
+```swift
+let preview = try await SettingsPortable.previewImport(
+    from: sourceURL,
+    configuration: config
+)
+print("Would add \(preview.additions.count) new settings")
+print("Would modify \(preview.modifications.count) existing settings")
+print("Would skip \(preview.skipped.count) settings")
+```
+
+### Custom Data Sources
+
+Implement `SettingsDataSource` for custom storage backends:
+
+```swift
+struct KeychainDataSource: SettingsDataSource {
+    var sourceIdentifier: String { "keychain" }
+    var displayName: String { "Keychain" }
+
+    func availableKeys() async throws -> [String] {
+        // Return all exportable keychain keys
+    }
+
+    func read(key: String) async throws -> (any SettingsExportable)? {
+        // Read value from keychain
+    }
+
+    func write(_ value: any SettingsExportable, forKey key: String) async throws {
+        // Write value to keychain
+    }
+}
+```
+
+### UserDefaults Configuration
+
+The built-in `UserDefaultsDataSource` supports filtering and app groups:
+
+```swift
+// Standard UserDefaults with key prefix filter
+let source = UserDefaultsDataSource(keyPrefix: "user.")
+
+// App group suite
+let groupSource = try UserDefaultsDataSource(suiteName: "group.com.example.app")
+
+// Convenience initializers
+let standard = UserDefaultsDataSource.standard(keyPrefix: "settings.")
+let group = try UserDefaultsDataSource.appGroup("group.com.example.app")
+```
+
+### Custom File Format
+
+Use a custom file extension instead of `.settings`:
+
+```swift
+let customFormat = SettingsPackageFormat(
+    fileExtension: "myappsettings",
+    uniformTypeIdentifier: "com.mycompany.myapp.settings"
+)
+
+let config = SettingsExportConfiguration(
+    sources: [UserDefaultsDataSource()],
+    appIdentifier: "com.mycompany.myapp",
+    format: customFormat
+)
+```
+
+### Xcode Project Setup
+
+To enable your app to open settings files, add these to your Info.plist:
+
+#### 1. Declare the File Type (UTExportedTypeDeclarations)
+
+```xml
+<key>UTExportedTypeDeclarations</key>
+<array>
+    <dict>
+        <key>UTTypeIdentifier</key>
+        <string>com.yourcompany.yourapp.settings</string>
+        <key>UTTypeDescription</key>
+        <string>App Settings</string>
+        <key>UTTypeConformsTo</key>
+        <array>
+            <string>public.data</string>
+            <string>public.archive</string>
+        </array>
+        <key>UTTypeTagSpecification</key>
+        <dict>
+            <key>public.filename-extension</key>
+            <array>
+                <string>settings</string>
+            </array>
+            <key>public.mime-type</key>
+            <string>application/x-settings</string>
+        </dict>
+    </dict>
+</array>
+```
+
+#### 2. Register as File Handler (CFBundleDocumentTypes)
+
+```xml
+<key>CFBundleDocumentTypes</key>
+<array>
+    <dict>
+        <key>CFBundleTypeName</key>
+        <string>App Settings</string>
+        <key>CFBundleTypeRole</key>
+        <string>Editor</string>
+        <key>LSHandlerRank</key>
+        <string>Owner</string>
+        <key>LSItemContentTypes</key>
+        <array>
+            <string>com.yourcompany.yourapp.settings</string>
+        </array>
+    </dict>
+</array>
+```
+
+#### 3. Handle Incoming Files
+
+```swift
+@main
+struct MyApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+                .onOpenURL { url in
+                    Task {
+                        await handleSettingsFile(url)
+                    }
+                }
+        }
+    }
+
+    func handleSettingsFile(_ url: URL) async {
+        let config = SettingsImportConfiguration(
+            sources: [UserDefaultsDataSource()]
+        )
+
+        do {
+            // Optional: preview first
+            let preview = try await SettingsPortable.previewImport(
+                from: url,
+                configuration: config
+            )
+
+            // Then import
+            let result = try await SettingsPortable.importSettings(
+                from: url,
+                configuration: config
+            )
+            print("Imported \(result.importedCount) settings")
+        } catch {
+            print("Import failed: \(error)")
+        }
+    }
+}
+```
+
+### Error Handling
+
+All errors are typed via `SettingsPortableError` with user-friendly messages:
+
+```swift
+do {
+    try await SettingsPortable.importSettings(from: url, configuration: config)
+} catch let error as SettingsPortableError {
+    // User-facing error message
+    print(error.errorDescription ?? "Unknown error")
+
+    // Recovery suggestion
+    if let recovery = error.recoverySuggestion {
+        print(recovery)
+    }
+}
+```
+
+Common error cases include:
+- `fileNotFound` - Settings file doesn't exist
+- `invalidPackage` - File is corrupted or not a valid settings package
+- `incompatibleVersion` - Package was created with a newer/older format version
+- `appMismatch` - Package is from a different app
+- `decodingFailed` / `encodingFailed` - Data conversion errors
+- `conflictDetected` - Key conflict when using `.failOnConflict` strategy
+
 ## Platform Differences
 
 ### iOS
