@@ -18,8 +18,9 @@ public extension SettingsContent {
     /// struct ProfileSettingsGroup: SettingsContent {
     ///     var body: some SettingsContent {
     ///         SettingsGroup("Profile") {
-    ///             SettingsItem("Name") { ... }
-    ///             SettingsItem("Email") { ... }
+    ///             TextField("Name", text: $name)
+    ///             TextField("Email", text: $email)
+    ///                 .indexed("Email", tags: ["contact"])
     ///         }
     ///     }
     ///     // makeNodes() is automatic! ✅

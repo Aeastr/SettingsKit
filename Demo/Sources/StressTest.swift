@@ -27,7 +27,7 @@ struct StressTestSettingsContainer: SettingsContainer {
                 ForEach(0..<10, id: \.self) { itemIndex in
                     let globalIndex = groupIndex * 10 + itemIndex
                     Toggle("Enable \(globalIndex)", isOn: $settings.items[globalIndex].isEnabled)
-                        .settingsTags(["setting", "toggle"])
+                        .indexed("Enable \(globalIndex)", tags: ["setting", "toggle"])
                 }
             }
         }
@@ -73,7 +73,7 @@ struct DeepNestedGroup: SettingsContent {
                 let globalIndex = level * 10 + itemIndex
                 if globalIndex < 1000 {
                     Toggle("Enable L\(level)-\(itemIndex)", isOn: $settings.items[globalIndex].isEnabled)
-                        .settingsTags(["nested", "deep"])
+                        .indexed("Enable L\(level)-\(itemIndex)", tags: ["nested", "deep"])
                 }
             }
 
