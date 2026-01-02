@@ -126,17 +126,6 @@ struct SettingsExportDemo: View {
 
     // MARK: - Export
 
-    // Keys we actually want to export (matches SettingsState properties)
-    private static let exportableKeys: Set<String> = [
-        "airplaneModeEnabled", "bluetoothEnabled", "personalHotspotEnabled",
-        "vpnQuickEnabled", "appleIntelligenceEnabled", "autoBrightness",
-        "siriSuggestions", "autoStandby", "debugMode", "verboseLogging",
-        "showHiddenFeatures", "networkDebugging", "airDropEnabled", "pipEnabled",
-        "autoFillPasswords", "use24Hour", "autoCorrect", "vpnManagementEnabled",
-        "darkMode", "autoJoinWiFi", "testToggle", "testSlider", "testText",
-        "testPicker", "testStepper", "testCounter"
-    ]
-
     private func prepareExport() async {
         isExporting = true
         defer { isExporting = false }
@@ -146,8 +135,7 @@ struct SettingsExportDemo: View {
             let config = SettingsExportConfiguration(
                 sources: [source],
                 appIdentifier: Bundle.main.bundleIdentifier ?? "com.settingskit.demo",
-                appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
-                keyFilter: { Self.exportableKeys.contains($0) }
+                appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
             )
 
             let data = try await SettingsPortable.exportSettingsData(configuration: config)
