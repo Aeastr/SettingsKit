@@ -71,7 +71,8 @@ public struct SettingsGroup<Content: SettingsContent, Icon: View>: SettingsConte
                         footer: footer,
                         presentation: presentation,
                         content: AnyView(content.body),
-                        children: children
+                        children: children,
+                        isCustomContent: false
                     )
                 )
             }
@@ -85,7 +86,8 @@ public struct SettingsGroup<Content: SettingsContent, Icon: View>: SettingsConte
                     footer: footer,
                     presentation: presentation,
                     content: AnyView(content.body),
-                    children: children
+                    children: children,
+                    isCustomContent: false
                 )
             )
         }

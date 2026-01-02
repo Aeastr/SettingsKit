@@ -118,7 +118,8 @@ public enum SettingsNode: Identifiable, Hashable, @unchecked Sendable {
             footer: nil,
             presentation: presentation,
             content: viewContent,
-            children: children
+            children: children,
+            isCustomContent: false
         )
     }
 }

@@ -325,7 +325,7 @@ struct DemoSettings: SettingsContainer {
         DeveloperSettingsGroup(state: state)
 
         SettingsGroup("Data & Transfer", .inline) {
-            SettingsGroup("Settings Transfer") {
+            CustomSettingsGroup("Settings Transfer") {
                 SettingsExportDemo()
             } icon: {
                 SettingsIcon("arrow.up.arrow.down.circle.fill", color: .blue)

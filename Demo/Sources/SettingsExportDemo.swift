@@ -16,30 +16,55 @@ struct SettingsExportDemo: View {
     @State private var errorMessage = ""
 
     var body: some View {
-        List {
-            Section {
-                Button("Export Settings") {
+        VStack(spacing: 24) {
+            VStack(spacing: 12) {
+                Text("Export & Import")
+                    .font(.headline)
+
+                Text("Transfer your settings to another device or restore after reinstalling.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            VStack(spacing: 12) {
+                Button {
                     Task { await exportSettings() }
+                } label: {
+                    Label("Export Settings", systemImage: "square.and.arrow.up")
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.borderedProminent)
                 .disabled(isExporting)
 
-                Button("Import Settings") {
+                Button {
                     Task { await importSettings() }
+                } label: {
+                    Label("Import Settings", systemImage: "square.and.arrow.down")
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.bordered)
                 .disabled(isImporting)
-            } header: {
-                Text("Settings Transfer")
-            } footer: {
-                Text("Export your settings to a .settings file that can be imported on another device or after reinstalling the app.")
             }
 
-            Section("Preview Before Import") {
-                Button("Preview Settings File") {
+            Divider()
+
+            VStack(spacing: 12) {
+                Text("Advanced")
+                    .font(.headline)
+
+                Button {
                     Task { await previewImport() }
+                } label: {
+                    Label("Preview Before Import", systemImage: "eye")
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.bordered)
             }
+
+            Spacer()
         }
-        .navigationTitle("Settings Transfer")
+        .padding()
         .alert("Success", isPresented: $showingResult) {
             Button("OK") { }
         } message: {

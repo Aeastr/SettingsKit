@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2D462B152F082ED900EE220D /* SettingsKitPortable in Frameworks */ = {isa = PBXBuildFile; productRef = 2D462B142F082ED900EE220D /* SettingsKitPortable */; };
 		2DF8F67A2ECB645D00843178 /* SettingsKitDemoWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 2DF8F6792ECB645D00843178 /* SettingsKitDemoWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2DF8F6AB2ECB659E00843178 /* SettingsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2DF8F6AA2ECB659E00843178 /* SettingsKit */; };
 		DFA8673A0677C29373B338A4 /* SettingsKit in Frameworks */ = {isa = PBXBuildFile; productRef = A3312EA1728BA1C83C1377EF /* SettingsKit */; };
@@ -72,6 +73,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DFA8673A0677C29373B338A4 /* SettingsKit in Frameworks */,
+				2D462B152F082ED900EE220D /* SettingsKitPortable in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -177,6 +179,7 @@
 			name = SettingsKitDemo;
 			packageProductDependencies = (
 				A3312EA1728BA1C83C1377EF /* SettingsKit */,
+				2D462B142F082ED900EE220D /* SettingsKitPortable */,
 			);
 			productName = SettingsKitDemo;
 			productReference = 1E4CBF1BBD860C0B17DAC096 /* SettingsKitDemo.app */;
@@ -622,6 +625,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		2D462B142F082ED900EE220D /* SettingsKitPortable */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SettingsKitPortable;
+		};
 		2DF8F6AA2ECB659E00843178 /* SettingsKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SettingsKit;

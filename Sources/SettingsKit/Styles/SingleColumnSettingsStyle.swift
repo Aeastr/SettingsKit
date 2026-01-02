@@ -25,13 +25,22 @@ public struct SingleColumnSettingsStyle: @preconcurrency SettingsStyle {
                 }
             }
             .navigationDestination(for: SettingsGroupConfiguration.self) { groupConfig in
-                List {
+                if groupConfig.isCustomContent {
+                    // Custom content renders directly without List wrapper
                     groupConfig.content
-                }
-                .navigationTitle(groupConfig.title)
+                        .navigationTitle(groupConfig.title)
 #if !os(tvOS) && !os(macOS)
-                .navigationBarTitleDisplayMode(.inline)
+                        .navigationBarTitleDisplayMode(.inline)
 #endif
+                } else {
+                    List {
+                        groupConfig.content
+                    }
+                    .navigationTitle(groupConfig.title)
+#if !os(tvOS) && !os(macOS)
+                    .navigationBarTitleDisplayMode(.inline)
+#endif
+                }
             }
         }
     }

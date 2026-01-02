@@ -55,33 +55,30 @@ import SwiftUI
 ///   not inline presentation. They always appear as tappable navigation rows.
 /// - Note: Individual elements within your custom view are not indexed for search.
 ///   Only the group itself (title, icon, tags) is searchable.
-public struct CustomSettingsGroup<Content: View>: SettingsContent {
+public struct CustomSettingsGroup<Content: View, Icon: View>: SettingsContent {
     let id: UUID
     let title: String
-    let icon: String?
-    let tags: [String]
+    let iconName: String?
+    let iconView: Icon
+    var tags: [String]
     let content: Content
 
     @Environment(\.settingsStyle) private var style
 
-    /// Creates a custom settings group with a title, optional icon, and custom content.
+    /// Creates a custom settings group with a custom icon view.
     ///
     /// - Parameters:
     ///   - title: The display title for the group, shown in the navigation row and search results.
-    ///   - icon: An optional SF Symbol name for the group icon.
-    ///   - tags: Additional search keywords to improve discoverability (default: empty).
     ///   - content: A view builder that returns your custom SwiftUI view.
+    ///   - icon: A view builder that returns a custom icon view (e.g., `SettingsIcon`).
     public init(
         _ title: String,
-        systemImage icon: String? = nil,
-        tags: [String] = [],
-        @ViewBuilder content: () -> Content
+        @ViewBuilder content: () -> Content,
+        @ViewBuilder icon: () -> Icon
     ) {
-        // Use hash-based stable ID
         var hasher = Hasher()
         hasher.combine(title)
-        hasher.combine(icon)
-        hasher.combine("custom") // Distinguish from regular groups
+        hasher.combine("custom")
         let hashValue = hasher.finalize()
         self.id = UUID(uuid: uuid_t(
             UInt8((hashValue >> 56) & 0xFF), UInt8((hashValue >> 48) & 0xFF),
@@ -92,41 +89,82 @@ public struct CustomSettingsGroup<Content: View>: SettingsContent {
         ))
 
         self.title = title
-        self.icon = icon
-        self.tags = tags
+        self.iconName = nil
+        self.iconView = icon()
+        self.tags = []
         self.content = content()
     }
 
     public var body: some View {
-        // Always render as navigation group
         style.makeGroup(
             configuration: SettingsGroupConfiguration(
                 title: title,
-                iconName: icon,
-                iconView: icon.map { AnyView(Image(systemName: $0)) },
+                iconName: iconName,
+                iconView: AnyView(iconView),
                 footer: nil,
                 presentation: .navigation,
                 content: AnyView(content),
-                children: [] // No indexed children
+                children: [],
+                isCustomContent: true
             )
         )
     }
 
     public func makeNodes() -> [SettingsNode] {
-        // Register the custom view content in the registry
         SettingsNodeViewRegistry.shared.register(id: id) { [content] in
             AnyView(content)
         }
 
-        // Create a group node with no children (content is not indexed)
+        // Register custom icon view for search results
+        if iconName == nil {
+            SettingsNodeViewRegistry.shared.registerIcon(id: id) { [iconView] in
+                AnyView(iconView)
+            }
+        }
+
         return [.group(
             id: id,
             title: title,
-            icon: icon,
+            icon: iconName,
             tags: tags,
             presentation: .navigation,
-            children: [] // Empty - custom content is not indexed
+            children: []
         )]
+    }
+}
+
+// MARK: - Convenience Initializer (systemImage)
+
+public extension CustomSettingsGroup where Icon == EmptyView {
+    /// Creates a custom settings group with an optional system image icon.
+    ///
+    /// - Parameters:
+    ///   - title: The display title for the group, shown in the navigation row and search results.
+    ///   - icon: An optional SF Symbol name for the group icon.
+    ///   - content: A view builder that returns your custom SwiftUI view.
+    init(
+        _ title: String,
+        systemImage icon: String? = nil,
+        @ViewBuilder content: () -> Content
+    ) {
+        var hasher = Hasher()
+        hasher.combine(title)
+        hasher.combine(icon)
+        hasher.combine("custom")
+        let hashValue = hasher.finalize()
+        self.id = UUID(uuid: uuid_t(
+            UInt8((hashValue >> 56) & 0xFF), UInt8((hashValue >> 48) & 0xFF),
+            UInt8((hashValue >> 40) & 0xFF), UInt8((hashValue >> 32) & 0xFF),
+            UInt8((hashValue >> 24) & 0xFF), UInt8((hashValue >> 16) & 0xFF),
+            UInt8((hashValue >> 8) & 0xFF),  UInt8(hashValue & 0xFF),
+            0, 0, 0, 0, 0, 0, 0, 0
+        ))
+
+        self.title = title
+        self.iconName = icon
+        self.iconView = EmptyView()
+        self.tags = []
+        self.content = content()
     }
 }
 
@@ -152,11 +190,8 @@ public extension CustomSettingsGroup {
     /// }
     /// ```
     func settingsTags(_ tags: [String]) -> Self {
-        CustomSettingsGroup(
-            title,
-            systemImage: icon,
-            tags: tags,
-            content: { content }
-        )
+        var copy = self
+        copy.tags = tags
+        return copy
     }
 }

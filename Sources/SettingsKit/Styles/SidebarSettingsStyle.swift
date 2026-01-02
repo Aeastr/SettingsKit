@@ -90,14 +90,21 @@ private struct SidebarNavigationLink: View {
     // DESTINATION-BASED NAVIGATION (macOS only)
     // Creates a fresh NavigationStack for each destination.
     // Provides proper state observation as part of the hybrid architecture.
+    @ViewBuilder
     private var destinationBasedLink: some View {
         NavigationLink {
             NavigationStack {
-                List {
-                    // Render directly from view hierarchy for proper state observation
+                if configuration.isCustomContent {
+                    // Custom content renders directly without List wrapper
                     configuration.content
+                        .navigationTitle(configuration.title)
+                } else {
+                    List {
+                        // Render directly from view hierarchy for proper state observation
+                        configuration.content
+                    }
+                    .navigationTitle(configuration.title)
                 }
-                .navigationTitle(configuration.title)
             }
         } label: {
             configuration.label
@@ -150,18 +157,40 @@ private struct SidebarContainer: View {
             //         Works in both compact (sidebar collapsed) and regular (sidebar visible) size classes
             NavigationStack(path: configuration.navigationPath) {
                 if let selectedGroup {
-                    List {
-                        // Render directly from view hierarchy for proper state observation
+                    if selectedGroup.isCustomContent {
+                        // Custom content renders directly without List wrapper
                         selectedGroup.content
-                    }
-                    .navigationTitle(selectedGroup.title)
-                    // Handle nested navigation (e.g., General → AirDrop)
-                    .navigationDestination(for: SettingsGroupConfiguration.self) { nestedGroupConfig in
+                            .navigationTitle(selectedGroup.title)
+                            .navigationDestination(for: SettingsGroupConfiguration.self) { nestedGroupConfig in
+                                if nestedGroupConfig.isCustomContent {
+                                    nestedGroupConfig.content
+                                        .navigationTitle(nestedGroupConfig.title)
+                                } else {
+                                    List {
+                                        nestedGroupConfig.content
+                                    }
+                                    .navigationTitle(nestedGroupConfig.title)
+                                }
+                            }
+                    } else {
                         List {
                             // Render directly from view hierarchy for proper state observation
-                            nestedGroupConfig.content
+                            selectedGroup.content
                         }
-                        .navigationTitle(nestedGroupConfig.title)
+                        .navigationTitle(selectedGroup.title)
+                        // Handle nested navigation (e.g., General → AirDrop)
+                        .navigationDestination(for: SettingsGroupConfiguration.self) { nestedGroupConfig in
+                            if nestedGroupConfig.isCustomContent {
+                                nestedGroupConfig.content
+                                    .navigationTitle(nestedGroupConfig.title)
+                            } else {
+                                List {
+                                    // Render directly from view hierarchy for proper state observation
+                                    nestedGroupConfig.content
+                                }
+                                .navigationTitle(nestedGroupConfig.title)
+                            }
+                        }
                     }
                 } else {
                     Text("Select a setting")

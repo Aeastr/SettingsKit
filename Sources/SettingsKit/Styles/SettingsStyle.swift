@@ -100,6 +100,9 @@ public struct SettingsGroupConfiguration: @unchecked Sendable, Hashable {
     /// The child nodes of this group (for search purposes).
     public let children: [SettingsNode]
 
+    /// Whether this is custom content that should be rendered directly without List wrapping.
+    public let isCustomContent: Bool
+
     /// Internal ID for hashing
     private let id = UUID()
 
