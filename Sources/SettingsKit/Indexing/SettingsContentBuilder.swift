@@ -132,10 +132,10 @@ struct ViewWrapper: SettingsContent {
         self.tags = []
     }
 
-    /// Creates an indexed wrapper with tags only (first tag becomes the title).
+    /// Creates an indexed wrapper with tags only.
     nonisolated init<Content: View>(_ content: Content, tags: [String]) {
         self.content = AnyView(content)
-        self.title = tags.first
+        self.title = nil
         self.tags = tags
     }
 
@@ -152,11 +152,12 @@ struct ViewWrapper: SettingsContent {
 
     /// Returns nodes for search if indexed (has title or tags).
     func makeNodes() -> [SettingsNode] {
-        guard let title else { return [] }
+        // Not indexed if no title and no tags
+        guard title != nil || !tags.isEmpty else { return [] }
 
-        // Generate stable ID from title
+        // Generate stable ID from title or first tag
         var hasher = Hasher()
-        hasher.combine(title)
+        hasher.combine(title ?? tags.first)
         let hashValue = hasher.finalize()
         let id = UUID(uuid: uuid_t(
             UInt8((hashValue >> 56) & 0xFF), UInt8((hashValue >> 48) & 0xFF),
@@ -173,7 +174,7 @@ struct ViewWrapper: SettingsContent {
 
         return [.item(
             id: id,
-            title: title,
+            title: title ?? tags.first ?? "",
             icon: nil,
             tags: tags,
             searchable: true
@@ -244,15 +245,15 @@ public extension View {
     /// ## Basic Usage
     ///
     /// ```swift
-    /// // Searchable by title only
+    /// // With a title
     /// Toggle("Dark Mode", isOn: $isDarkMode)
     ///     .indexed("Dark Mode")
     ///
-    /// // Searchable by title and additional keywords
+    /// // With a title and additional tags
     /// Toggle("Dark Mode", isOn: $isDarkMode)
     ///     .indexed("Dark Mode", tags: ["theme", "appearance", "night"])
     ///
-    /// // Searchable by tags only (first tag becomes the title)
+    /// // With tags only
     /// Toggle("Dark Mode", isOn: $isDarkMode)
     ///     .indexed(tags: ["Dark Mode", "theme", "appearance"])
     /// ```
@@ -267,10 +268,10 @@ public extension View {
     /// }
     ///
     /// Toggle("Dark Mode", isOn: $isDarkMode)
-    ///     .indexed("Dark Mode", ThemeTags())
+    ///     .indexed("Dark Mode", tagSet: ThemeTags())
     ///
     /// Picker("App Icon", selection: $appIcon) { ... }
-    ///     .indexed("App Icon", ThemeTags())
+    ///     .indexed("App Icon", tagSet: ThemeTags())
     /// ```
     ///
     /// - Parameter title: The primary search title for this view. This appears in search results.
@@ -289,17 +290,15 @@ public extension View {
         ViewWrapper(self, title: title, tags: tags)
     }
 
-    /// Indexes this view for settings search using tags only.
-    ///
-    /// The first tag becomes the search title displayed in results.
+    /// Indexes this view for settings search using tags.
     ///
     /// ```swift
     /// Toggle("Dark Mode", isOn: $isDarkMode)
     ///     .indexed(tags: ["Dark Mode", "theme", "appearance"])
-    /// //              ↑ This becomes the title
     /// ```
     ///
-    /// - Parameter tags: Keywords that will match this view in search. The first tag is used as the title.
+    /// - Note: Tag order matters for search ranking.
+    /// - Parameter tags: Keywords that will match this view in search.
     /// - Returns: A searchable settings content wrapper.
     func indexed(tags: [String]) -> some SettingsContent {
         ViewWrapper(self, tags: tags)
@@ -307,20 +306,18 @@ public extension View {
 
     /// Indexes this view for settings search using a tag set.
     ///
-    /// The first tag in the set becomes the search title.
-    ///
     /// ```swift
     /// struct NetworkTags: SettingsTagSet {
-    ///     var tags: [String] { ["Network", "wifi", "cellular", "internet"] }
+    ///     var tags: [String] { ["network", "wifi", "cellular", "internet"] }
     /// }
     ///
     /// Toggle("Wi-Fi", isOn: $wifiEnabled)
-    ///     .indexed(NetworkTags())  // Title will be "Network"
+    ///     .indexed(tagSet: NetworkTags())
     /// ```
     ///
-    /// - Parameter tagSet: A ``SettingsTagSet`` providing search keywords. The first tag is used as the title.
+    /// - Parameter tagSet: A ``SettingsTagSet`` providing search keywords.
     /// - Returns: A searchable settings content wrapper.
-    func indexed(_ tagSet: some SettingsTagSet) -> some SettingsContent {
+    func indexed(tagSet: some SettingsTagSet) -> some SettingsContent {
         ViewWrapper(self, tags: tagSet.tags)
     }
 
@@ -332,14 +329,14 @@ public extension View {
     /// }
     ///
     /// Toggle("Wi-Fi", isOn: $wifiEnabled)
-    ///     .indexed("Wi-Fi", NetworkTags())
+    ///     .indexed("Wi-Fi", tagSet: NetworkTags())
     /// ```
     ///
     /// - Parameters:
     ///   - title: The primary search title for this view.
     ///   - tagSet: A ``SettingsTagSet`` providing additional search keywords.
     /// - Returns: A searchable settings content wrapper.
-    func indexed(_ title: String, _ tagSet: some SettingsTagSet) -> some SettingsContent {
+    func indexed(_ title: String, tagSet: some SettingsTagSet) -> some SettingsContent {
         ViewWrapper(self, title: title, tags: tagSet.tags)
     }
 
@@ -349,14 +346,14 @@ public extension View {
     ///
     /// ```swift
     /// Toggle("Reduce Motion", isOn: $reduceMotion)
-    ///     .indexed("Reduce Motion", AccessibilityTags(), AnimationTags())
+    ///     .indexed("Reduce Motion", tagSets: AccessibilityTags(), AnimationTags())
     /// ```
     ///
     /// - Parameters:
     ///   - title: The primary search title for this view.
     ///   - tagSets: Multiple ``SettingsTagSet`` instances to combine.
     /// - Returns: A searchable settings content wrapper.
-    func indexed(_ title: String, _ tagSets: any SettingsTagSet...) -> some SettingsContent {
+    func indexed(_ title: String, tagSets: any SettingsTagSet...) -> some SettingsContent {
         let combinedTags = tagSets.flatMap { $0.tags }
         return ViewWrapper(self, title: title, tags: combinedTags)
     }
