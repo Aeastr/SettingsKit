@@ -1,15 +1,46 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import SettingsKitPortable
 
-// MARK: - Example: Settings Export/Import View
+// MARK: - Settings File Document
 
-/// Example view demonstrating how to use SettingsKitPortable for exporting and importing settings.
-///
-/// This is a minimal example showing the core functionality. In a real app, you would integrate
-/// this with your app's UI and potentially use system file dialogs.
+/// A transferable document for settings export/import.
+struct SettingsDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.settingsPackage] }
+    static var writableContentTypes: [UTType] { [.settingsPackage] }
+
+    let data: Data
+
+    init(data: Data) {
+        self.data = data
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        guard let data = configuration.file.regularFileContents else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        self.data = data
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: data)
+    }
+}
+
+extension UTType {
+    static var settingsPackage: UTType {
+        UTType(exportedAs: "com.settingskit.settings-package", conformingTo: .data)
+    }
+}
+
+// MARK: - Settings Export/Import View
+
 struct SettingsExportDemo: View {
     @State private var isExporting = false
     @State private var isImporting = false
+    @State private var exportDocument: SettingsDocument?
+    @State private var showingExporter = false
+    @State private var showingImporter = false
     @State private var showingResult = false
     @State private var resultMessage = ""
     @State private var showError = false
@@ -29,7 +60,7 @@ struct SettingsExportDemo: View {
 
             VStack(spacing: 12) {
                 Button {
-                    Task { await exportSettings() }
+                    Task { await prepareExport() }
                 } label: {
                     Label("Export Settings", systemImage: "square.and.arrow.up")
                         .frame(maxWidth: .infinity)
@@ -38,7 +69,7 @@ struct SettingsExportDemo: View {
                 .disabled(isExporting)
 
                 Button {
-                    Task { await importSettings() }
+                    showingImporter = true
                 } label: {
                     Label("Import Settings", systemImage: "square.and.arrow.down")
                         .frame(maxWidth: .infinity)
@@ -47,24 +78,40 @@ struct SettingsExportDemo: View {
                 .disabled(isImporting)
             }
 
-            Divider()
-
-            VStack(spacing: 12) {
-                Text("Advanced")
-                    .font(.headline)
-
-                Button {
-                    Task { await previewImport() }
-                } label: {
-                    Label("Preview Before Import", systemImage: "eye")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-            }
-
             Spacer()
         }
         .padding()
+        .fileExporter(
+            isPresented: $showingExporter,
+            document: exportDocument,
+            contentType: .settingsPackage,
+            defaultFilename: "Settings"
+        ) { result in
+            switch result {
+            case .success(let url):
+                resultMessage = "Settings exported to \(url.lastPathComponent)"
+                showingResult = true
+            case .failure(let error):
+                errorMessage = error.localizedDescription
+                showError = true
+            }
+            exportDocument = nil
+        }
+        .fileImporter(
+            isPresented: $showingImporter,
+            allowedContentTypes: [.settingsPackage, .data],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    Task { await importSettings(from: url) }
+                }
+            case .failure(let error):
+                errorMessage = error.localizedDescription
+                showError = true
+            }
+        }
         .alert("Success", isPresented: $showingResult) {
             Button("OK") { }
         } message: {
@@ -77,36 +124,23 @@ struct SettingsExportDemo: View {
         }
     }
 
-    // MARK: - Export Example
+    // MARK: - Export
 
-    private func exportSettings() async {
+    private func prepareExport() async {
         isExporting = true
         defer { isExporting = false }
 
         do {
-            // 1. Create data source(s)
             let source = UserDefaultsDataSource()
-
-            // 2. Create export configuration
             let config = SettingsExportConfiguration(
                 sources: [source],
-                appIdentifier: Bundle.main.bundleIdentifier ?? "com.example.app",
-                appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
-                metadata: ["exportReason": "manual backup"]
+                appIdentifier: Bundle.main.bundleIdentifier ?? "com.settingskit.demo",
+                appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
             )
 
-            // 3. Choose destination
-            let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-            let destination = documentsURL.appendingPathComponent("MySettings").appendingPathExtension("settings")
-
-            // 4. Export
-            let result = try await SettingsPortable.exportSettings(
-                configuration: config,
-                to: destination
-            )
-
-            resultMessage = "Exported \(result.exportedCount) settings to \(destination.lastPathComponent)"
-            showingResult = true
+            let data = try await SettingsPortable.exportSettingsData(configuration: config)
+            exportDocument = SettingsDocument(data: data)
+            showingExporter = true
 
         } catch let error as SettingsPortableError {
             errorMessage = error.errorDescription ?? "Export failed"
@@ -120,29 +154,29 @@ struct SettingsExportDemo: View {
         }
     }
 
-    // MARK: - Import Example
+    // MARK: - Import
 
-    private func importSettings() async {
+    private func importSettings(from url: URL) async {
         isImporting = true
         defer { isImporting = false }
 
+        // Start accessing security-scoped resource
+        guard url.startAccessingSecurityScopedResource() else {
+            errorMessage = "Unable to access the selected file"
+            showError = true
+            return
+        }
+        defer { url.stopAccessingSecurityScopedResource() }
+
         do {
-            // 1. Get source file (in a real app, use file picker)
-            let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-            let source = documentsURL.appendingPathComponent("MySettings.settings")
-
-            // 2. Create data source(s)
             let dataSource = UserDefaultsDataSource()
-
-            // 3. Create import configuration
             let config = SettingsImportConfiguration(
                 sources: [dataSource],
-                conflictStrategy: .overwrite  // or .keepExisting, .merge, .failOnConflict
+                conflictStrategy: .overwrite
             )
 
-            // 4. Import
             let result = try await SettingsPortable.importSettings(
-                from: source,
+                from: url,
                 configuration: config
             )
 
@@ -168,51 +202,11 @@ struct SettingsExportDemo: View {
             showError = true
         }
     }
-
-    // MARK: - Preview Example
-
-    private func previewImport() async {
-        do {
-            let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-            let source = documentsURL.appendingPathComponent("MySettings.settings")
-
-            let config = SettingsImportConfiguration(
-                sources: [UserDefaultsDataSource()]
-            )
-
-            let preview = try await SettingsPortable.previewImport(
-                from: source,
-                configuration: config
-            )
-
-            var message = """
-            Would add \(preview.additions.count) new settings
-            Would modify \(preview.modifications.count) existing settings
-            Would skip \(preview.skipped.count) settings
-
-            Created by: \(preview.manifest.appIdentifier)
-            Created at: \(preview.manifest.createdAt.formatted())
-            """
-
-            resultMessage = message
-            showingResult = true
-
-        } catch let error as SettingsPortableError {
-            errorMessage = error.errorDescription ?? "Preview failed"
-            showError = true
-        } catch {
-            errorMessage = error.localizedDescription
-            showError = true
-        }
-    }
 }
 
 // MARK: - Example: Custom Data Source
 
 /// Example of implementing a custom data source for a different storage backend.
-///
-/// This example shows how to create a data source for a custom plist file.
-/// You can adapt this pattern for Keychain, Core Data, file-based storage, etc.
 struct PlistDataSource: SettingsDataSource {
     let fileURL: URL
 
@@ -233,7 +227,6 @@ struct PlistDataSource: SettingsDataSource {
         guard let value = dict[key] else {
             return nil
         }
-        // Convert to exportable type
         switch value {
         case let string as String: return string
         case let int as Int: return int
@@ -249,130 +242,6 @@ struct PlistDataSource: SettingsDataSource {
         try (dict as NSDictionary).write(to: fileURL)
     }
 }
-
-// MARK: - Xcode Setup Documentation
-/*
-
- ## Setting Up Your Xcode Project for .settings Files
-
- To enable your app to open .settings files (or your custom extension), you need to:
-
- ### 1. Declare the File Type (Info.plist - UTExportedTypeDeclarations)
-
- Add this to your app's Info.plist to declare the file type:
-
- ```xml
- <key>UTExportedTypeDeclarations</key>
- <array>
-     <dict>
-         <key>UTTypeIdentifier</key>
-         <string>com.yourcompany.yourapp.settings</string>
-         <key>UTTypeDescription</key>
-         <string>App Settings</string>
-         <key>UTTypeConformsTo</key>
-         <array>
-             <string>public.data</string>
-             <string>public.archive</string>
-         </array>
-         <key>UTTypeTagSpecification</key>
-         <dict>
-             <key>public.filename-extension</key>
-             <array>
-                 <string>settings</string>
-             </array>
-             <key>public.mime-type</key>
-             <string>application/x-settings</string>
-         </dict>
-     </dict>
- </array>
- ```
-
- ### 2. Register as Handler (Info.plist - CFBundleDocumentTypes)
-
- Add this to allow your app to open .settings files:
-
- ```xml
- <key>CFBundleDocumentTypes</key>
- <array>
-     <dict>
-         <key>CFBundleTypeName</key>
-         <string>App Settings</string>
-         <key>CFBundleTypeRole</key>
-         <string>Editor</string>
-         <key>LSHandlerRank</key>
-         <string>Owner</string>
-         <key>LSItemContentTypes</key>
-         <array>
-             <string>com.yourcompany.yourapp.settings</string>
-         </array>
-     </dict>
- </array>
- ```
-
- ### 3. Handle Incoming Files (SwiftUI)
-
- In your app, handle incoming files using the `onOpenURL` modifier:
-
- ```swift
- @main
- struct MyApp: App {
-     var body: some Scene {
-         WindowGroup {
-             ContentView()
-                 .onOpenURL { url in
-                     Task {
-                         await handleSettingsFile(url)
-                     }
-                 }
-         }
-     }
-
-     func handleSettingsFile(_ url: URL) async {
-         let config = SettingsImportConfiguration(
-             sources: [UserDefaultsDataSource()]
-         )
-
-         do {
-             // Show preview first
-             let preview = try await SettingsPortable.previewImport(
-                 from: url,
-                 configuration: config
-             )
-
-             // Ask user for confirmation, then import
-             let result = try await SettingsPortable.importSettings(
-                 from: url,
-                 configuration: config
-             )
-
-             print("Imported \(result.importedCount) settings")
-         } catch {
-             print("Import failed: \(error)")
-         }
-     }
- }
- ```
-
- ### 4. Custom File Extension
-
- If you want a custom extension instead of .settings, use `SettingsPackageFormat`:
-
- ```swift
- let customFormat = SettingsPackageFormat(
-     fileExtension: "myappsettings",
-     uniformTypeIdentifier: "com.mycompany.myapp.settings"
- )
-
- let config = SettingsExportConfiguration(
-     sources: [UserDefaultsDataSource()],
-     appIdentifier: "com.mycompany.myapp",
-     format: customFormat
- )
- ```
-
- Then update your Info.plist to use your custom extension and UTI.
-
- */
 
 #Preview {
     NavigationStack {
