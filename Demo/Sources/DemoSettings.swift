@@ -7,7 +7,15 @@ struct DemoSettings: SettingsContainer {
 
     var settingsBody: some SettingsContent {
         @Bindable var state = settings
-
+        
+        SettingsGroup("Data & Transfer", .inline) {
+            CustomSettingsGroup("Settings Transfer") {
+                SettingsExportDemo()
+            } icon: {
+                SettingsIcon("arrow.up.arrow.down.circle.fill", color: .blue)
+            }
+        }
+        
         SettingsGroup("Profile") {
             VStack(alignment: .leading) {
                 Text("Aether")
@@ -323,14 +331,6 @@ struct DemoSettings: SettingsContainer {
         }
 
         DeveloperSettingsGroup(state: state)
-
-        SettingsGroup("Data & Transfer", .inline) {
-            CustomSettingsGroup("Settings Transfer") {
-                SettingsExportDemo()
-            } icon: {
-                SettingsIcon("arrow.up.arrow.down.circle.fill", color: .blue)
-            }
-        }
 
         SettingsGroup("Debug", .inline) {
             SettingsGroup("Input Testing") {
