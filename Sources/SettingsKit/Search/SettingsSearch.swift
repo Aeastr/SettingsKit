@@ -21,17 +21,20 @@ public struct SettingsSearchResult: Identifiable {
     public let matchedItems: [SettingsNode]
     public let isNavigation: Bool // true = show as nav link, false = show items inline
     public let orderIndex: Int // Original order in the tree for stable sorting
+    public let parentGroup: SettingsNode? // The nearest navigation parent (for grouping in UI)
 
     public init(
         group: SettingsNode,
         matchedItems: [SettingsNode],
         isNavigation: Bool,
-        orderIndex: Int
+        orderIndex: Int,
+        parentGroup: SettingsNode? = nil
     ) {
         self.group = group
         self.matchedItems = matchedItems
         self.isNavigation = isNavigation
         self.orderIndex = orderIndex
+        self.parentGroup = parentGroup
     }
 }
 

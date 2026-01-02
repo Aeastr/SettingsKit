@@ -34,10 +34,38 @@ public struct SettingsView<Container: SettingsContainer>: View {
                 description: Text("Check the spelling or try a different search")
             )
         } else {
-            // Show search results as a flat list with actual content
-            ForEach(searchResults) { result in
-                SearchResultSection(container: container, result: result, navigationPath: $navigationPath)
+            // Group results by parent
+            let grouped = groupResultsByParent(searchResults)
+            ForEach(grouped, id: \.parent?.id) { group in
+                SearchResultGroup(container: container, parentGroup: group.parent, results: group.results, navigationPath: $navigationPath)
             }
+        }
+    }
+
+    /// Groups search results by their parent navigation group
+    private func groupResultsByParent(_ results: [SettingsSearchResult]) -> [(parent: SettingsNode?, results: [SettingsSearchResult])] {
+        // Group by parent ID using dictionary
+        var groupedByParent: [UUID?: [SettingsSearchResult]] = [:]
+        var parentNodes: [UUID?: SettingsNode?] = [:]
+        var firstSeenOrder: [UUID?: Int] = [:]
+
+        for (index, result) in results.enumerated() {
+            let parentID = result.parentGroup?.id
+            if groupedByParent[parentID] == nil {
+                groupedByParent[parentID] = []
+                parentNodes[parentID] = result.parentGroup
+                firstSeenOrder[parentID] = index
+            }
+            groupedByParent[parentID]?.append(result)
+        }
+
+        // Sort groups by first appearance order to maintain relevance
+        let sortedKeys = groupedByParent.keys.sorted { lhs, rhs in
+            (firstSeenOrder[lhs] ?? 0) < (firstSeenOrder[rhs] ?? 0)
+        }
+
+        return sortedKeys.map { key in
+            (parent: parentNodes[key] ?? nil, results: groupedByParent[key] ?? [])
         }
     }
 
@@ -126,6 +154,135 @@ extension EnvironmentValues {
     var searchResultIDs: Set<UUID>? {
         get { self[SearchResultIDsKey.self] }
         set { self[SearchResultIDsKey.self] = newValue }
+    }
+}
+
+/// Renders a group of search results under a common parent
+struct SearchResultGroup<Container: SettingsContainer>: View {
+    let container: Container
+    let parentGroup: SettingsNode?
+    let results: [SettingsSearchResult]
+    @Binding var navigationPath: NavigationPath
+
+    var body: some View {
+        if let parent = parentGroup {
+            // Results under a parent group - show as section with parent header
+            Section {
+                ForEach(results) { result in
+                    SearchResultRow(container: container, result: result, navigationPath: $navigationPath)
+                }
+            } header: {
+                parentHeader(for: parent)
+            }
+        } else {
+            // Top-level results (no parent) - show without section wrapper
+            ForEach(results) { result in
+                SearchResultRow(container: container, result: result, navigationPath: $navigationPath)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func parentHeader(for parent: SettingsNode) -> some View {
+        let config = parent.asGroupConfiguration()
+#if os(macOS)
+        NavigationLink {
+            NavigationStack {
+                List {
+                    config.content
+                }
+                .navigationTitle(config.title)
+            }
+        } label: {
+            HStack {
+                if let iconView = SettingsNodeViewRegistry.shared.iconView(for: parent.id) {
+                    iconView
+                } else if let iconName = parent.icon {
+                    Image(systemName: iconName)
+                }
+                Text(parent.title)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .buttonStyle(.plain)
+#else
+        NavigationLink(value: config) {
+            HStack {
+                if let iconView = SettingsNodeViewRegistry.shared.iconView(for: parent.id) {
+                    iconView
+                } else if let iconName = parent.icon {
+                    Image(systemName: iconName)
+                }
+                Text(parent.title)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .buttonStyle(.plain)
+#endif
+    }
+}
+
+/// Renders a single search result row (either navigation link or inline items)
+struct SearchResultRow<Container: SettingsContainer>: View {
+    let container: Container
+    let result: SettingsSearchResult
+    @Binding var navigationPath: NavigationPath
+
+    var body: some View {
+        if case .group(let id, let title, let icon, _, _, _) = result.group {
+            if result.isNavigation {
+                // Navigation result: show as a single tappable row
+                let config = result.group.asGroupConfiguration()
+#if os(macOS)
+                NavigationLink {
+                    NavigationStack {
+                        List {
+                            config.content
+                        }
+                        .navigationTitle(config.title)
+                    }
+                } label: {
+                    searchResultLabel(id: id, title: title, iconName: icon)
+                }
+#else
+                NavigationLink(value: config) {
+                    searchResultLabel(id: id, title: title, iconName: icon)
+                }
+#endif
+            } else {
+                // Leaf group result: show items inline
+                ForEach(result.matchedItems) { item in
+                    if let view = SettingsNodeViewRegistry.shared.view(for: item.id) {
+                        view
+                    } else {
+                        if let icon = item.icon {
+                            Label(item.title, systemImage: icon)
+                        } else {
+                            Text(item.title)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func searchResultLabel(id: UUID, title: String, iconName: String?) -> some View {
+        Label {
+            Text(title)
+        } icon: {
+            if let iconView = SettingsNodeViewRegistry.shared.iconView(for: id) {
+                iconView
+            } else if let iconName = iconName {
+                Image(systemName: iconName)
+            }
+        }
     }
 }
 

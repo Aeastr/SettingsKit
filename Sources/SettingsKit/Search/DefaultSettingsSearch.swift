@@ -89,7 +89,7 @@ public struct DefaultSettingsSearch: SettingsSearch {
         return 0
     }
 
-    private func searchNodes(_ nodes: [SettingsNode], query: String, results: inout [SettingsSearchResult], orderIndex: inout Int) {
+    private func searchNodes(_ nodes: [SettingsNode], query: String, results: inout [SettingsSearchResult], orderIndex: inout Int, navigationParent: SettingsNode? = nil) {
         for node in nodes {
             let currentIndex = orderIndex
             orderIndex += 1
@@ -102,6 +102,9 @@ public struct DefaultSettingsSearch: SettingsSearch {
 
                 let isLeafGroup = !children.isEmpty && children.allSatisfy { !$0.isGroup }
 
+                // Determine the parent for child results
+                let parentForChildren = presentation == .navigation ? node : navigationParent
+
                 if isLeafGroup {
                     // Leaf group: check if group or any searchable children match
                     let searchableChildren = children.filter { $0.isSearchable }
@@ -112,14 +115,14 @@ public struct DefaultSettingsSearch: SettingsSearch {
 
                     // Only add navigation groups as leaf results, skip inline groups
                     if presentation == .navigation && (groupMatches || childMatches) {
-                        results.append(SettingsSearchResult(group: node, matchedItems: children, isNavigation: false, orderIndex: currentIndex))
+                        results.append(SettingsSearchResult(group: node, matchedItems: children, isNavigation: false, orderIndex: currentIndex, parentGroup: navigationParent))
                     }
                 } else {
                     // Parent group
                     if groupMatches {
                         if presentation == .navigation {
                             // Navigation group that matches: add it as a navigation result
-                            results.append(SettingsSearchResult(group: node, matchedItems: [], isNavigation: true, orderIndex: currentIndex))
+                            results.append(SettingsSearchResult(group: node, matchedItems: [], isNavigation: true, orderIndex: currentIndex, parentGroup: navigationParent))
 
                             // Add all immediate navigation children as separate results
                             for child in children {
@@ -130,11 +133,12 @@ public struct DefaultSettingsSearch: SettingsSearch {
                                     // Skip inline child groups
                                     guard childPresentation == .navigation else { continue }
 
-                                    let isLeafChild = grandchildren.allSatisfy { !$0.isGroup }
+                                    // Leaf child = has indexed items (not groups). Empty children = navigation group.
+                                    let isLeafChild = !grandchildren.isEmpty && grandchildren.allSatisfy { !$0.isGroup }
                                     if isLeafChild {
-                                        results.append(SettingsSearchResult(group: child, matchedItems: grandchildren, isNavigation: false, orderIndex: childIndex))
+                                        results.append(SettingsSearchResult(group: child, matchedItems: grandchildren, isNavigation: false, orderIndex: childIndex, parentGroup: node))
                                     } else {
-                                        results.append(SettingsSearchResult(group: child, matchedItems: [], isNavigation: true, orderIndex: childIndex))
+                                        results.append(SettingsSearchResult(group: child, matchedItems: [], isNavigation: true, orderIndex: childIndex, parentGroup: node))
                                     }
                                 }
                             }
@@ -148,18 +152,19 @@ public struct DefaultSettingsSearch: SettingsSearch {
                                     // Only add navigation child groups
                                     guard childPresentation == .navigation else { continue }
 
-                                    let isLeafChild = grandchildren.allSatisfy { !$0.isGroup }
+                                    // Leaf child = has indexed items (not groups). Empty children = navigation group.
+                                    let isLeafChild = !grandchildren.isEmpty && grandchildren.allSatisfy { !$0.isGroup }
                                     if isLeafChild {
-                                        results.append(SettingsSearchResult(group: child, matchedItems: grandchildren, isNavigation: false, orderIndex: childIndex))
+                                        results.append(SettingsSearchResult(group: child, matchedItems: grandchildren, isNavigation: false, orderIndex: childIndex, parentGroup: navigationParent))
                                     } else {
-                                        results.append(SettingsSearchResult(group: child, matchedItems: [], isNavigation: true, orderIndex: childIndex))
+                                        results.append(SettingsSearchResult(group: child, matchedItems: [], isNavigation: true, orderIndex: childIndex, parentGroup: navigationParent))
                                     }
                                 }
                             }
                         }
                     }
                     // Always recurse into children to find deeper matches
-                    searchNodes(children, query: query, results: &results, orderIndex: &orderIndex)
+                    searchNodes(children, query: query, results: &results, orderIndex: &orderIndex, navigationParent: parentForChildren)
                 }
 
             case .item:
