@@ -98,7 +98,7 @@ struct EmptySettingsContent: SettingsContent {
 ///
 /// The wrapper renders the view normally but returns an empty node array from `makeNodes()`,
 /// meaning these views won't appear in search results or contribute to navigation structure.
-/// Only `SettingsGroup` and `SettingsItem` contribute to the searchable node tree.
+/// Use `.settingsTags(_:)` on any view to make it searchable.
 ///
 /// - Note: Uses `nonisolated(unsafe)` for concurrency safety. This is safe because views
 ///   are UI state that always execute on the main thread, even though the compiler can't
@@ -107,18 +107,68 @@ struct ViewWrapper: SettingsContent {
     /// The wrapped view content stored as type-erased AnyView.
     nonisolated(unsafe) let content: AnyView
 
+    /// Tags for search indexing. Empty means not searchable.
+    let tags: [String]
+
     /// Creates a wrapper around any view.
     /// - Parameter content: The view to wrap as SettingsContent.
-    nonisolated init<Content: View>(_ content: Content) {
+    nonisolated init<Content: View>(_ content: Content, tags: [String] = []) {
         self.content = AnyView(content)
+        self.tags = tags
     }
 
     var body: some View {
         content
     }
 
-    /// Returns an empty array since arbitrary views don't contribute to search/navigation.
+    /// Returns nodes for search if tags are provided.
     func makeNodes() -> [SettingsNode] {
-        []
+        guard !tags.isEmpty else { return [] }
+
+        // Generate stable ID from tags
+        var hasher = Hasher()
+        for tag in tags {
+            hasher.combine(tag)
+        }
+        let hashValue = hasher.finalize()
+        let id = UUID(uuid: uuid_t(
+            UInt8((hashValue >> 56) & 0xFF), UInt8((hashValue >> 48) & 0xFF),
+            UInt8((hashValue >> 40) & 0xFF), UInt8((hashValue >> 32) & 0xFF),
+            UInt8((hashValue >> 24) & 0xFF), UInt8((hashValue >> 16) & 0xFF),
+            UInt8((hashValue >> 8) & 0xFF),  UInt8(hashValue & 0xFF),
+            0, 0, 0, 0, 0, 0, 0, 0
+        ))
+
+        // Register view for search results
+        SettingsNodeViewRegistry.shared.register(id: id) { [content] in
+            content
+        }
+
+        return [.item(
+            id: id,
+            title: tags.first ?? "",
+            icon: nil,
+            tags: tags,
+            searchable: true
+        )]
+    }
+}
+
+// MARK: - View Extension for Tags
+
+public extension View {
+    /// Adds search tags to this view, making it discoverable in settings search.
+    ///
+    /// Use this modifier to make any SwiftUI view searchable within settings:
+    /// ```swift
+    /// Toggle("Dark Mode", isOn: $isDarkMode)
+    ///     .settingsTags(["dark", "theme", "appearance"])
+    /// ```
+    ///
+    /// - Parameter tags: Keywords that will match this view in search results.
+    ///   The first tag is used as the primary title for search display.
+    /// - Returns: A searchable settings content wrapper.
+    func settingsTags(_ tags: [String]) -> some SettingsContent {
+        ViewWrapper(self, tags: tags)
     }
 }

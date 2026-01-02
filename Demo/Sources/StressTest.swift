@@ -26,10 +26,8 @@ struct StressTestSettingsContainer: SettingsContainer {
             SettingsGroup("Group \(groupIndex)", systemImage: "folder") {
                 ForEach(0..<10, id: \.self) { itemIndex in
                     let globalIndex = groupIndex * 10 + itemIndex
-                    SettingsItem("Item \(globalIndex)") {
-                        Toggle("Enable", isOn: $settings.items[globalIndex].isEnabled)
-                    }
-                    .settingsTags(["setting", "toggle"])
+                    Toggle("Enable \(globalIndex)", isOn: $settings.items[globalIndex].isEnabled)
+                        .settingsTags(["setting", "toggle"])
                 }
             }
         }
@@ -37,12 +35,8 @@ struct StressTestSettingsContainer: SettingsContainer {
         // Test 2: Single group with 1000 items inline
         SettingsGroup("Massive Group", systemImage: "square.stack.3d.up") {
             ForEach(settings.items) { item in
-                SettingsItem("Massive Item Toggle \(item.index)") {
-                        Toggle("Toggle", isOn: $settings.items[item.index].isEnabled)
-                }
-                SettingsItem("Massive Item Slider \(item.index)") {
-                        Slider(value: $settings.items[item.index].value, in: 0...100)
-                }
+                Toggle("Toggle \(item.index)", isOn: $settings.items[item.index].isEnabled)
+                Slider(value: $settings.items[item.index].value, in: 0...100)
             }
         }
         .settingsTags(["massive"])
@@ -58,9 +52,7 @@ struct StressTestSettingsContainer: SettingsContainer {
                 ForEach(0..<10, id: \.self) { itemIndex in
                     let globalIndex = (groupIndex + 100) * 10 + itemIndex
                     if globalIndex < 1000 {
-                        SettingsItem("Mixed Item \(globalIndex)") {
-                            Toggle("Enable", isOn: $settings.items[globalIndex].isEnabled)
-                        }
+                        Toggle("Enable \(globalIndex)", isOn: $settings.items[globalIndex].isEnabled)
                     }
                 }
             }
@@ -80,10 +72,8 @@ struct DeepNestedGroup: SettingsContent {
             ForEach(0..<10, id: \.self) { itemIndex in
                 let globalIndex = level * 10 + itemIndex
                 if globalIndex < 1000 {
-                    SettingsItem("Deep Item L\(level)-\(itemIndex)") {
-                        Toggle("Enable", isOn: $settings.items[globalIndex].isEnabled)
-                    }
-                    .settingsTags(["nested", "deep"])
+                    Toggle("Enable L\(level)-\(itemIndex)", isOn: $settings.items[globalIndex].isEnabled)
+                        .settingsTags(["nested", "deep"])
                 }
             }
 
