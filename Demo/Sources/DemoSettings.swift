@@ -1,5 +1,6 @@
 import SwiftUI
 import SettingsKit
+import SettingsKitPortable
 
 struct DemoSettings: SettingsContainer {
     @Environment(SettingsState.self) var settings
@@ -322,8 +323,15 @@ struct DemoSettings: SettingsContainer {
         }
 
         DeveloperSettingsGroup(state: state)
-        
-        
+
+        SettingsGroup("Data & Transfer", .inline) {
+            SettingsGroup("Settings Transfer") {
+                SettingsExportDemo()
+            } icon: {
+                SettingsIcon("arrow.up.arrow.down.circle.fill", color: .blue)
+            }
+        }
+
         SettingsGroup("Debug", .inline) {
             SettingsGroup("Input Testing") {
                 Toggle("Test Toggle", isOn: $state.testToggle)
