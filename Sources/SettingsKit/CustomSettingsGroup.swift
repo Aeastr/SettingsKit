@@ -62,6 +62,8 @@ public struct CustomSettingsGroup<Content: View>: SettingsContent {
     let tags: [String]
     let content: Content
 
+    @Environment(\.settingsStyle) private var style
+
     /// Creates a custom settings group with a title, optional icon, and custom content.
     ///
     /// - Parameters:
@@ -96,13 +98,12 @@ public struct CustomSettingsGroup<Content: View>: SettingsContent {
     }
 
     public var body: some View {
-        let style = EnvironmentValues().settingsStyle
-
         // Always render as navigation group
         style.makeGroup(
             configuration: SettingsGroupConfiguration(
                 title: title,
-                icon: icon,
+                iconName: icon,
+                iconView: icon.map { AnyView(Image(systemName: $0)) },
                 footer: nil,
                 presentation: .navigation,
                 content: AnyView(content),

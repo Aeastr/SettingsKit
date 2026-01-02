@@ -82,8 +82,11 @@ public struct SettingsGroupConfiguration: @unchecked Sendable, Hashable {
     /// The title of the group.
     public let title: String
 
-    /// The icon of the group, if any.
-    public let icon: String?
+    /// The SF Symbol name for the icon, if any (used for search results fallback).
+    public let iconName: String?
+
+    /// The custom icon view, if any.
+    public let iconView: AnyView?
 
     /// The footer text of the group, if any.
     public let footer: String?
@@ -103,10 +106,14 @@ public struct SettingsGroupConfiguration: @unchecked Sendable, Hashable {
     /// A view that represents the group's label (title + icon).
     @ViewBuilder
     public var label: some View {
-        if let icon = icon {
-            Label(title, systemImage: icon)
-        } else {
+        Label {
             Text(title)
+        } icon: {
+            if let iconView = iconView {
+                iconView
+            } else if let iconName = iconName {
+                Image(systemName: iconName)
+            }
         }
     }
 

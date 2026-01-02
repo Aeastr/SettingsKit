@@ -1,5 +1,5 @@
 <div align="center">
-  <img width="150" height="150" src="/Resources/icon/icon.png" alt="SettingsKit Icon">
+  <img width="120" height="120" src="/Resources/icon/icon.png" alt="SettingsKit Icon">
   <h1><b>SettingsKit</b></h1>
   <p>
     A declarative SwiftUI framework for building settings interfaces with navigation, search, and customizable styling.

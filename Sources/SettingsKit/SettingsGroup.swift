@@ -14,26 +14,26 @@ public enum SettingsGroupPresentation: Sendable {
 // MARK: - Group
 
 /// A group of settings that can contain both items and nested groups.
-public struct SettingsGroup<Content: SettingsContent>: SettingsContent {
+public struct SettingsGroup<Content: SettingsContent, Icon: View>: SettingsContent {
     let id: UUID
     let title: String
-    let icon: String?
+    let iconName: String?
+    let iconView: Icon
     let footer: String?
     var tags: [String]
     let presentation: SettingsGroupPresentation
     let content: Content
 
+    /// Creates a settings group with a custom icon view.
     public init(
         _ title: String,
         _ presentation: SettingsGroupPresentation = .navigation,
-        systemImage: String? = nil,
         footer: String? = nil,
-        @SettingsContentBuilder content: () -> Content
+        @SettingsContentBuilder content: () -> Content,
+        @ViewBuilder icon: () -> Icon
     ) {
-        // Use a stable ID based on title and icon to ensure consistency across makeNodes() calls
         var hasher = Hasher()
         hasher.combine(title)
-        hasher.combine(systemImage)
         hasher.combine(presentation)
         let hashValue = hasher.finalize()
         self.id = UUID(uuid: uuid_t(
@@ -45,7 +45,8 @@ public struct SettingsGroup<Content: SettingsContent>: SettingsContent {
         ))
 
         self.title = title
-        self.icon = systemImage
+        self.iconName = nil
+        self.iconView = icon()
         self.footer = footer
         self.tags = []
         self.presentation = presentation
@@ -65,7 +66,8 @@ public struct SettingsGroup<Content: SettingsContent>: SettingsContent {
                 style.makeGroup(
                     configuration: SettingsGroupConfiguration(
                         title: title,
-                        icon: icon,
+                        iconName: iconName,
+                        iconView: AnyView(iconView),
                         footer: footer,
                         presentation: presentation,
                         content: AnyView(content.body),
@@ -78,7 +80,8 @@ public struct SettingsGroup<Content: SettingsContent>: SettingsContent {
             style.makeGroup(
                 configuration: SettingsGroupConfiguration(
                     title: title,
-                    icon: icon,
+                    iconName: iconName,
+                    iconView: AnyView(iconView),
                     footer: footer,
                     presentation: presentation,
                     content: AnyView(content.body),
@@ -99,11 +102,45 @@ public struct SettingsGroup<Content: SettingsContent>: SettingsContent {
         return [.group(
             id: id,
             title: title,
-            icon: icon,
+            icon: iconName,
             tags: tags,
             presentation: presentation,
             children: children
         )]
+    }
+}
+
+// MARK: - Convenience Initializer (no icon)
+
+public extension SettingsGroup where Icon == EmptyView {
+    /// Creates a settings group with an optional system image icon.
+    init(
+        _ title: String,
+        _ presentation: SettingsGroupPresentation = .navigation,
+        systemImage: String? = nil,
+        footer: String? = nil,
+        @SettingsContentBuilder content: () -> Content
+    ) {
+        var hasher = Hasher()
+        hasher.combine(title)
+        hasher.combine(systemImage)
+        hasher.combine(presentation)
+        let hashValue = hasher.finalize()
+        self.id = UUID(uuid: uuid_t(
+            UInt8((hashValue >> 56) & 0xFF), UInt8((hashValue >> 48) & 0xFF),
+            UInt8((hashValue >> 40) & 0xFF), UInt8((hashValue >> 32) & 0xFF),
+            UInt8((hashValue >> 24) & 0xFF), UInt8((hashValue >> 16) & 0xFF),
+            UInt8((hashValue >> 8) & 0xFF),  UInt8(hashValue & 0xFF),
+            0, 0, 0, 0, 0, 0, 0, 0
+        ))
+
+        self.title = title
+        self.iconName = systemImage
+        self.iconView = EmptyView()
+        self.footer = footer
+        self.tags = []
+        self.presentation = presentation
+        self.content = content()
     }
 }
 

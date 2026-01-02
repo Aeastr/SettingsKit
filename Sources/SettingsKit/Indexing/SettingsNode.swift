@@ -113,7 +113,8 @@ public enum SettingsNode: Identifiable, Hashable, @unchecked Sendable {
 
         return SettingsGroupConfiguration(
             title: title,
-            icon: icon,
+            iconName: icon,
+            iconView: nil,
             footer: nil,
             presentation: presentation,
             content: viewContent,
