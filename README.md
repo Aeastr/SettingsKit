@@ -74,31 +74,22 @@ struct MySettings: SettingsContainer {
         @Bindable var settings = appSettings
 
         SettingsGroup("General", systemImage: "gear") {
-            SettingsItem("Notifications") {
-                Toggle("Enable", isOn: $settings.notificationsEnabled)
-            }
-            
-            SettingsItem("Dark Mode") {
-                Toggle("Enable", isOn: $settings.darkMode)
-            }
+            Toggle("Notifications", isOn: $settings.notificationsEnabled)
+            Toggle("Dark Mode", isOn: $settings.darkMode)
         }
-        
+
         SettingsGroup("Appearance", systemImage: "paintbrush") {
-            SettingsItem("Font Size") {
-                Slider(value: $settings.fontSize, in: 10...24, step: 1) {
-                    Text("Size: \(Int(settings.fontSize))pt")
-                }
+            Slider(value: $settings.fontSize, in: 10...24, step: 1) {
+                Text("Font Size: \(Int(settings.fontSize))pt")
             }
         }
-        
+
         SettingsGroup("Privacy & Security", systemImage: "lock.shield") {
-            SettingsItem("Auto Lock Delay") {
-                Slider(value: $settings.autoLockDelay, in: 60...3600, step: 60) {
-                    Text("Delay: \(Int(settings.autoLockDelay/60)) minutes")
-                }
+            Slider(value: $settings.autoLockDelay, in: 60...3600, step: 60) {
+                Text("Auto Lock: \(Int(settings.autoLockDelay/60)) min")
             }
         }
-        
+
         // ... more groups
     }
 }
@@ -159,21 +150,78 @@ Custom groups are indexed and searchable (by title, icon, and tags), but their c
 - Custom layouts that need full control over presentation
 - Third-party UI components
 
-### Settings Items
+### Using SwiftUI Views Directly
 
-Items are the individual settings within a group:
+Inside groups, use standard SwiftUI controls directly—no wrapper needed:
 
 ```swift
-SettingsItem("Volume") {
+SettingsGroup("Sound", systemImage: "speaker.wave.2") {
     Slider(value: $volume, in: 0...100)
-}
-
-SettingsItem("Auto-Lock", icon: "lock") {
-    Picker("", selection: $autoLockTime) {
-        Text("30 seconds").tag(30)
-        Text("1 minute").tag(60)
+    Toggle("Haptic Feedback", isOn: $haptics)
+    Picker("Output", selection: $audioOutput) {
+        Text("Speaker").tag(0)
+        Text("Headphones").tag(1)
     }
 }
+```
+
+### Making Views Searchable with `.indexed()`
+
+By default, individual views are **not** indexed for search—only `SettingsGroup` titles are searchable. To make a view appear in search results, use the `.indexed()` modifier:
+
+```swift
+SettingsGroup("Display", systemImage: "sun.max") {
+    Toggle("Dark Mode", isOn: $darkMode)
+        .indexed("Dark Mode", tags: ["theme", "appearance"])
+
+    Slider(value: $brightness, in: 0...1)
+        .indexed("Brightness")
+}
+```
+
+#### Why is `.indexed()` needed?
+
+SwiftUI doesn't provide a way to extract label text from views at runtime. When you write `Toggle("Dark Mode", ...)`, the "Dark Mode" string is embedded in the view's generic type signature and is inaccessible to frameworks. The `.indexed()` modifier explicitly provides searchable metadata.
+
+#### `.indexed()` API
+
+```swift
+// Title only
+Toggle("Dark Mode", isOn: $dark)
+    .indexed("Dark Mode")
+
+// Title + additional search tags
+Toggle("Dark Mode", isOn: $dark)
+    .indexed("Dark Mode", tags: ["theme", "night", "appearance"])
+
+// Tags only (useful when title would be redundant)
+Toggle("Dark Mode", isOn: $dark)
+    .indexed(tags: ["Dark Mode", "theme", "appearance"])
+```
+
+#### Reusable Tag Sets
+
+Define tag sets to keep tagging consistent across your app:
+
+```swift
+struct ThemeTags: SettingsTagSet {
+    var tags: [String] { ["theme", "appearance", "display", "colors"] }
+}
+
+struct AccessibilityTags: SettingsTagSet {
+    var tags: [String] { ["accessibility", "a11y", "vision", "motor"] }
+}
+
+// Use them
+Toggle("Dark Mode", isOn: $dark)
+    .indexed("Dark Mode", tagSet: ThemeTags())
+
+Toggle("Reduce Motion", isOn: $reduceMotion)
+    .indexed("Reduce Motion", tagSet: AccessibilityTags())
+
+// Combine multiple tag sets
+Toggle("High Contrast", isOn: $highContrast)
+    .indexed("High Contrast", tagSets: ThemeTags(), AccessibilityTags())
 ```
 
 ### Nested Navigation
@@ -183,14 +231,14 @@ Groups can contain other groups for deep hierarchies:
 ```swift
 SettingsGroup("General", systemImage: "gear") {
     SettingsGroup("About", systemImage: "info.circle") {
-        SettingsItem("Version") {
-            Text("1.0.0")
-        }
+        Text("Version: 1.0.0")
+        Text("Build: 42")
     }
 
     SettingsGroup("Language", systemImage: "globe") {
-        SettingsItem("Preferred Language") {
-            Text("English")
+        Picker("Language", selection: $language) {
+            Text("English").tag("en")
+            Text("Spanish").tag("es")
         }
     }
 }
@@ -261,15 +309,15 @@ MySettings(settings: settings)
 
 ## Search
 
-Search is automatic and intelligent, filtering by titles and tags:
+Search is automatic and works out of the box. `SettingsGroup` titles are always searchable. Use `.indexed()` on individual views to make them searchable too (see [Making Views Searchable](#making-views-searchable-with-indexed) above).
 
-### Adding Search Tags
+### Adding Tags to Groups
 
-Improve search discoverability with tags:
+Groups can also have additional search tags:
 
 ```swift
 SettingsGroup("Notifications", systemImage: "bell")
-    .settingsTags(["alerts", "sounds", "badges"])
+    .settingsTags(["alerts", "sounds", "badges", "push"])
 ```
 
 ### Custom Search
@@ -299,14 +347,10 @@ struct DeveloperSettings: SettingsContent {
 
     var body: some SettingsContent {
         SettingsGroup("Developer", systemImage: "hammer") {
-            SettingsItem("Debug Mode") {
-                Toggle("Enable", isOn: $settings.debugMode)
-            }
+            Toggle("Debug Mode", isOn: $settings.debugMode)
 
             if settings.debugMode {
-                SettingsItem("Verbose Logging") {
-                    Toggle("Enable", isOn: $settings.verboseLogging)
-                }
+                Toggle("Verbose Logging", isOn: $settings.verboseLogging)
             }
         }
     }
@@ -326,25 +370,12 @@ Show or hide settings based on state:
 
 ```swift
 SettingsGroup("Advanced", systemImage: "gearshape.2") {
-    SettingsItem("Enable Advanced Features") {
-        Toggle("Enable", isOn: $showAdvanced)
-    }
+    Toggle("Enable Advanced Features", isOn: $showAdvanced)
 
     if showAdvanced {
-        SettingsItem("Advanced Option 1") { /* ... */ }
-        SettingsItem("Advanced Option 2") { /* ... */ }
+        Toggle("Advanced Option 1", isOn: $option1)
+        Toggle("Advanced Option 2", isOn: $option2)
     }
-}
-```
-
-### Non-Searchable Items
-
-Mark items as non-searchable when they're not useful in search results:
-
-```swift
-SettingsItem("Current Status", searchable: false) {
-    Text("Connected")
-        .foregroundStyle(.secondary)
 }
 ```
 
@@ -378,7 +409,7 @@ This separation solves a critical challenge: making settings fully searchable wh
 
 ### The Indexing System
 
-When you define settings using `SettingsGroup` and `SettingsItem`, SettingsKit builds an internal **node tree** that represents your entire settings hierarchy:
+When you define settings using `SettingsGroup` and views with `.indexed()`, SettingsKit builds an internal **node tree** that represents your entire settings hierarchy:
 
 1. **Declarative Definition** - You write settings using SwiftUI-style syntax
 2. **Node Tree Building** - Each element converts to a `SettingsNode` containing only metadata
@@ -388,19 +419,19 @@ When you define settings using `SettingsGroup` and `SettingsItem`, SettingsKit b
 
 #### The Node Tree (Metadata-Only)
 
-Every setting becomes a node in an indexed tree. **Crucially, nodes store only metadata—no views or content:**
+Groups and indexed views become nodes in an indexed tree. **Crucially, nodes store only metadata—no views or content:**
 
 ```
 SettingsNode Tree:
 ├─ Group: "General" (navigation)
-│  ├─ Item: "Notifications" → ID: abc123
-│  └─ Item: "Dark Mode" → ID: def456
+│  ├─ IndexedView: "Notifications" → ID: abc123
+│  └─ IndexedView: "Dark Mode" → ID: def456
 ├─ Group: "Appearance" (navigation)
-│  └─ Item: "Font Size" → ID: ghi789
+│  └─ IndexedView: "Font Size" → ID: ghi789
 ├─ CustomGroup: "Developer Tools" (navigation) → ID: xyz789
 │  └─ (no children - custom content not indexed)
 └─ Group: "Privacy & Security" (navigation)
-   └─ Item: "Auto Lock Delay" → ID: jkl012
+   └─ (no indexed views - group searchable by title only)
 ```
 
 Each node stores:
@@ -416,8 +447,8 @@ Each node stores:
 The `SettingsNodeViewRegistry` is a global singleton that maps node IDs to view builder closures:
 
 ```swift
-// When SettingsItem.makeNodes() is called:
-SettingsNodeViewRegistry.shared.register(id: itemID) {
+// When .indexed() wraps a view:
+SettingsNodeViewRegistry.shared.register(id: viewID) {
     AnyView(Toggle("Enable", isOn: $settings.notificationsEnabled))
 }
 
@@ -427,7 +458,7 @@ SettingsNodeViewRegistry.shared.register(id: customGroupID) {
 }
 
 // Later, in search results:
-if let view = SettingsNodeViewRegistry.shared.view(for: itemID) {
+if let view = SettingsNodeViewRegistry.shared.view(for: viewID) {
     view  // Renders the actual Toggle with live state binding
 }
 ```
