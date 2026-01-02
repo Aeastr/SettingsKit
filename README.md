@@ -73,21 +73,27 @@ struct MySettings: SettingsContainer {
     var settingsBody: some SettingsContent {
         @Bindable var settings = appSettings
 
+        // Plain icon (no colored background)
         SettingsGroup("General", systemImage: "gear") {
             Toggle("Notifications", isOn: $settings.notificationsEnabled)
             Toggle("Dark Mode", isOn: $settings.darkMode)
         }
 
-        SettingsGroup("Appearance", systemImage: "paintbrush") {
+        // iOS Settings-style colored icons
+        SettingsGroup("Appearance") {
             Slider(value: $settings.fontSize, in: 10...24, step: 1) {
                 Text("Font Size: \(Int(settings.fontSize))pt")
             }
+        } icon: {
+            SettingsIcon("paintbrush", color: .blue)
         }
 
-        SettingsGroup("Privacy & Security", systemImage: "lock.shield") {
+        SettingsGroup("Privacy & Security") {
             Slider(value: $settings.autoLockDelay, in: 60...3600, step: 60) {
                 Text("Auto Lock: \(Int(settings.autoLockDelay/60)) min")
             }
+        } icon: {
+            SettingsIcon("lock.shield", color: .blue)
         }
 
         // ... more groups
@@ -122,6 +128,46 @@ SettingsGroup("Display", systemImage: "sun.max") {
 // Inline group - appears as a section header
 SettingsGroup("Quick Settings", .inline) {
     // Settings items...
+}
+```
+
+### iOS Settings-Style Icons
+
+For colored icon backgrounds like the iOS Settings app, use the `icon:` ViewBuilder with `SettingsIcon`:
+
+```swift
+SettingsGroup("Airplane Mode") {
+    Toggle("Enabled", isOn: $airplaneMode)
+} icon: {
+    SettingsIcon("airplane", color: .orange)
+}
+
+SettingsGroup("Wi-Fi") {
+    Text("My Network")
+} icon: {
+    SettingsIcon("wifi", color: .blue)
+}
+
+SettingsGroup("Battery") {
+    Text("94%")
+} icon: {
+    SettingsIcon("battery.100", color: .green)
+}
+```
+
+The `icon:` ViewBuilder accepts any SwiftUI view, so you can create fully custom icons:
+
+```swift
+SettingsGroup("Custom") {
+    // content
+} icon: {
+    Circle()
+        .fill(.purple.gradient)
+        .frame(width: 29, height: 29)
+        .overlay {
+            Image(systemName: "star.fill")
+                .foregroundStyle(.white)
+        }
 }
 ```
 

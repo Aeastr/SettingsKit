@@ -99,6 +99,13 @@ public struct SettingsGroup<Content: SettingsContent, Icon: View>: SettingsConte
             AnyView(content.body)
         }
 
+        // Register the icon view for search results (only for custom icon ViewBuilder, not systemImage)
+        if iconName == nil {
+            SettingsNodeViewRegistry.shared.registerIcon(id: id) { [iconView] in
+                AnyView(iconView)
+            }
+        }
+
         return [.group(
             id: id,
             title: title,

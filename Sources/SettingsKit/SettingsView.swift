@@ -136,7 +136,7 @@ struct SearchResultSection<Container: SettingsContainer>: View {
     @Binding var navigationPath: NavigationPath
 
     var body: some View {
-        if case .group(_, let title, let icon, _, _, _) = result.group {
+        if case .group(let id, let title, let icon, _, _, _) = result.group {
             if result.isNavigation {
                 // Navigation result: show as a single tappable row
                 let config = result.group.asGroupConfiguration()
@@ -150,12 +150,12 @@ struct SearchResultSection<Container: SettingsContainer>: View {
                         .navigationTitle(config.title)
                     }
                 } label: {
-                    Label(title, systemImage: icon ?? "folder")
+                    searchResultLabel(id: id, title: title, iconName: icon)
                 }
 #else
                 // iOS: Use selection-based navigation (matches SidebarNavigationLink)
                 NavigationLink(value: config) {
-                    Label(title, systemImage: icon ?? "folder")
+                    searchResultLabel(id: id, title: title, iconName: icon)
                 }
 #endif
             } else {
@@ -187,9 +187,7 @@ struct SearchResultSection<Container: SettingsContainer>: View {
                         }
                     } label: {
                         HStack {
-                            if let icon = icon {
-                                Image(systemName: icon)
-                            }
+                            searchResultIcon(id: id, iconName: icon)
                             Text(title)
                             Spacer()
                             Image(systemName: "chevron.right")
@@ -202,9 +200,7 @@ struct SearchResultSection<Container: SettingsContainer>: View {
                     // iOS: Use selection-based navigation (matches SidebarNavigationLink)
                     NavigationLink(value: config) {
                         HStack {
-                            if let icon = icon {
-                                Image(systemName: icon)
-                            }
+                            searchResultIcon(id: id, iconName: icon)
                             Text(title)
                             Spacer()
                             Image(systemName: "chevron.right")
@@ -216,6 +212,26 @@ struct SearchResultSection<Container: SettingsContainer>: View {
 #endif
                 }
             }
+        }
+    }
+
+    /// Creates a label for search results using the registered icon view if available
+    @ViewBuilder
+    private func searchResultLabel(id: UUID, title: String, iconName: String?) -> some View {
+        Label {
+            Text(title)
+        } icon: {
+            searchResultIcon(id: id, iconName: iconName)
+        }
+    }
+
+    /// Gets the icon view from registry or falls back to system image
+    @ViewBuilder
+    private func searchResultIcon(id: UUID, iconName: String?) -> some View {
+        if let iconView = SettingsNodeViewRegistry.shared.iconView(for: id) {
+            iconView
+        } else if let iconName = iconName {
+            Image(systemName: iconName)
         }
     }
 
