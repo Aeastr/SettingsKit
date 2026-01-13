@@ -2,84 +2,110 @@ import SwiftUI
 
 @Observable
 class SettingsState {
-    var airplaneModeEnabled = UserDefaults.standard.bool(forKey: "airplaneModeEnabled") {
-        didSet { UserDefaults.standard.set(airplaneModeEnabled, forKey: "airplaneModeEnabled") }
+    var airplaneModeEnabled: Bool {
+        get { UserDefaults.standard.bool(forKey: "airplaneModeEnabled") }
+        set { UserDefaults.standard.set(newValue, forKey: "airplaneModeEnabled") }
     }
-    var bluetoothEnabled = UserDefaults.standard.object(forKey: "bluetoothEnabled") as? Bool ?? true {
-        didSet { UserDefaults.standard.set(bluetoothEnabled, forKey: "bluetoothEnabled") }
+    var bluetoothEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: "bluetoothEnabled") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "bluetoothEnabled") }
     }
-    var personalHotspotEnabled = UserDefaults.standard.bool(forKey: "personalHotspotEnabled") {
-        didSet { UserDefaults.standard.set(personalHotspotEnabled, forKey: "personalHotspotEnabled") }
+    var personalHotspotEnabled: Bool {
+        get { UserDefaults.standard.bool(forKey: "personalHotspotEnabled") }
+        set { UserDefaults.standard.set(newValue, forKey: "personalHotspotEnabled") }
     }
-    var vpnQuickEnabled = UserDefaults.standard.bool(forKey: "vpnQuickEnabled") {
-        didSet { UserDefaults.standard.set(vpnQuickEnabled, forKey: "vpnQuickEnabled") }
+    var vpnQuickEnabled: Bool {
+        get { UserDefaults.standard.bool(forKey: "vpnQuickEnabled") }
+        set { UserDefaults.standard.set(newValue, forKey: "vpnQuickEnabled") }
     }
-    var appleIntelligenceEnabled = UserDefaults.standard.object(forKey: "appleIntelligenceEnabled") as? Bool ?? true {
-        didSet { UserDefaults.standard.set(appleIntelligenceEnabled, forKey: "appleIntelligenceEnabled") }
+    var appleIntelligenceEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: "appleIntelligenceEnabled") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "appleIntelligenceEnabled") }
     }
-    var autoBrightness = UserDefaults.standard.object(forKey: "autoBrightness") as? Bool ?? true {
-        didSet { UserDefaults.standard.set(autoBrightness, forKey: "autoBrightness") }
+    var autoBrightness: Bool {
+        get { UserDefaults.standard.object(forKey: "autoBrightness") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "autoBrightness") }
     }
-    var siriSuggestions = UserDefaults.standard.object(forKey: "siriSuggestions") as? Bool ?? true {
-        didSet { UserDefaults.standard.set(siriSuggestions, forKey: "siriSuggestions") }
+    var siriSuggestions: Bool {
+        get { UserDefaults.standard.object(forKey: "siriSuggestions") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "siriSuggestions") }
     }
-    var autoStandby = UserDefaults.standard.object(forKey: "autoStandby") as? Bool ?? true {
-        didSet { UserDefaults.standard.set(autoStandby, forKey: "autoStandby") }
+    var autoStandby: Bool {
+        get { UserDefaults.standard.object(forKey: "autoStandby") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "autoStandby") }
     }
-    var debugMode = UserDefaults.standard.bool(forKey: "debugMode") {
-        didSet { UserDefaults.standard.set(debugMode, forKey: "debugMode") }
+    var debugMode: Bool {
+        get { UserDefaults.standard.bool(forKey: "debugMode") }
+        set { UserDefaults.standard.set(newValue, forKey: "debugMode") }
     }
-    var verboseLogging = UserDefaults.standard.bool(forKey: "verboseLogging") {
-        didSet { UserDefaults.standard.set(verboseLogging, forKey: "verboseLogging") }
+    var verboseLogging: Bool {
+        get { UserDefaults.standard.bool(forKey: "verboseLogging") }
+        set { UserDefaults.standard.set(newValue, forKey: "verboseLogging") }
     }
-    var showHiddenFeatures = UserDefaults.standard.bool(forKey: "showHiddenFeatures") {
-        didSet { UserDefaults.standard.set(showHiddenFeatures, forKey: "showHiddenFeatures") }
+    var showHiddenFeatures: Bool {
+        get { UserDefaults.standard.bool(forKey: "showHiddenFeatures") }
+        set { UserDefaults.standard.set(newValue, forKey: "showHiddenFeatures") }
     }
-    var networkDebugging = UserDefaults.standard.bool(forKey: "networkDebugging") {
-        didSet { UserDefaults.standard.set(networkDebugging, forKey: "networkDebugging") }
+    var networkDebugging: Bool {
+        get { UserDefaults.standard.bool(forKey: "networkDebugging") }
+        set { UserDefaults.standard.set(newValue, forKey: "networkDebugging") }
     }
-    var airDropEnabled = UserDefaults.standard.object(forKey: "airDropEnabled") as? Bool ?? true {
-        didSet { UserDefaults.standard.set(airDropEnabled, forKey: "airDropEnabled") }
+    var airDropEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: "airDropEnabled") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "airDropEnabled") }
     }
-    var pipEnabled = UserDefaults.standard.object(forKey: "pipEnabled") as? Bool ?? true {
-        didSet { UserDefaults.standard.set(pipEnabled, forKey: "pipEnabled") }
+    var pipEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: "pipEnabled") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "pipEnabled") }
     }
-    var autoFillPasswords = UserDefaults.standard.object(forKey: "autoFillPasswords") as? Bool ?? true {
-        didSet { UserDefaults.standard.set(autoFillPasswords, forKey: "autoFillPasswords") }
+    var autoFillPasswords: Bool {
+        get { UserDefaults.standard.object(forKey: "autoFillPasswords") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "autoFillPasswords") }
     }
-    var use24Hour = UserDefaults.standard.bool(forKey: "use24Hour") {
-        didSet { UserDefaults.standard.set(use24Hour, forKey: "use24Hour") }
+    var use24Hour: Bool {
+        get { UserDefaults.standard.bool(forKey: "use24Hour") }
+        set { UserDefaults.standard.set(newValue, forKey: "use24Hour") }
     }
-    var autoCorrect = UserDefaults.standard.object(forKey: "autoCorrect") as? Bool ?? true {
-        didSet { UserDefaults.standard.set(autoCorrect, forKey: "autoCorrect") }
+    var autoCorrect: Bool {
+        get { UserDefaults.standard.object(forKey: "autoCorrect") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "autoCorrect") }
     }
-    var vpnManagementEnabled = UserDefaults.standard.bool(forKey: "vpnManagementEnabled") {
-        didSet { UserDefaults.standard.set(vpnManagementEnabled, forKey: "vpnManagementEnabled") }
+    var vpnManagementEnabled: Bool {
+        get { UserDefaults.standard.bool(forKey: "vpnManagementEnabled") }
+        set { UserDefaults.standard.set(newValue, forKey: "vpnManagementEnabled") }
     }
-    var darkMode = UserDefaults.standard.bool(forKey: "darkMode") {
-        didSet { UserDefaults.standard.set(darkMode, forKey: "darkMode") }
+    var darkMode: Bool {
+        get { UserDefaults.standard.bool(forKey: "darkMode") }
+        set { UserDefaults.standard.set(newValue, forKey: "darkMode") }
     }
-    var autoJoinWiFi = UserDefaults.standard.object(forKey: "autoJoinWiFi") as? Bool ?? true {
-        didSet { UserDefaults.standard.set(autoJoinWiFi, forKey: "autoJoinWiFi") }
+    var autoJoinWiFi: Bool {
+        get { UserDefaults.standard.object(forKey: "autoJoinWiFi") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "autoJoinWiFi") }
     }
 
     // Test input state
-    var testToggle = UserDefaults.standard.bool(forKey: "testToggle") {
-        didSet { UserDefaults.standard.set(testToggle, forKey: "testToggle") }
+    var testToggle: Bool {
+        get { UserDefaults.standard.bool(forKey: "testToggle") }
+        set { UserDefaults.standard.set(newValue, forKey: "testToggle") }
     }
-    var testSlider = UserDefaults.standard.object(forKey: "testSlider") as? Double ?? 0.5 {
-        didSet { UserDefaults.standard.set(testSlider, forKey: "testSlider") }
+    var testSlider: Double {
+        get { UserDefaults.standard.object(forKey: "testSlider") as? Double ?? 0.5 }
+        set { UserDefaults.standard.set(newValue, forKey: "testSlider") }
     }
-    var testText = UserDefaults.standard.string(forKey: "testText") ?? "" {
-        didSet { UserDefaults.standard.set(testText, forKey: "testText") }
+    var testText: String {
+        get { UserDefaults.standard.string(forKey: "testText") ?? "" }
+        set { UserDefaults.standard.set(newValue, forKey: "testText") }
     }
-    var testPicker = UserDefaults.standard.integer(forKey: "testPicker") {
-        didSet { UserDefaults.standard.set(testPicker, forKey: "testPicker") }
+    var testPicker: Int {
+        get { UserDefaults.standard.integer(forKey: "testPicker") }
+        set { UserDefaults.standard.set(newValue, forKey: "testPicker") }
     }
-    var testStepper = UserDefaults.standard.integer(forKey: "testStepper") {
-        didSet { UserDefaults.standard.set(testStepper, forKey: "testStepper") }
+    var testStepper: Int {
+        get { UserDefaults.standard.integer(forKey: "testStepper") }
+        set { UserDefaults.standard.set(newValue, forKey: "testStepper") }
     }
-    var testCounter = UserDefaults.standard.integer(forKey: "testCounter") {
-        didSet { UserDefaults.standard.set(testCounter, forKey: "testCounter") }
+    var testCounter: Int {
+        get { UserDefaults.standard.integer(forKey: "testCounter") }
+        set { UserDefaults.standard.set(newValue, forKey: "testCounter") }
     }
 }
