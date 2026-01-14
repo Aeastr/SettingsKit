@@ -1,5 +1,5 @@
 <div align="center">
-  <img width="120" height="120" src="/Resources/icon/icon.png" alt="SettingsKit Icon">
+  <img width="128" height="128" src="/Resources/icon/icon.png" alt="SettingsKit Icon">
   <h1><b>SettingsKit</b></h1>
   <p>
     A declarative SwiftUI framework for building settings interfaces with navigation, search, and customizable styling.
@@ -7,20 +7,20 @@
 </div>
 
 <p align="center">
-  <a href="https://developer.apple.com/ios/"><img src="https://img.shields.io/badge/iOS-17%2B-blue.svg" alt="iOS 17+"></a>
-  <a href="https://developer.apple.com/macOS/"><img src="https://img.shields.io/badge/macOS-14%2B-blue.svg" alt="macOS 14+"></a>
-  <a href="https://developer.apple.com/watchOS/"><img src="https://img.shields.io/badge/watchOS-10%2B-blue.svg" alt="watchOS 10+"></a>
-  <a href="https://developer.apple.com/tvOS/"><img src="https://img.shields.io/badge/tvOS-17%2B-blue.svg" alt="tvOS 17+"></a>
-  <a href="https://developer.apple.com/visionOS/"><img src="https://img.shields.io/badge/visionOS-1%2B-blue.svg" alt="visionOS 1+"></a>
-  <a href="https://swift.org/"><img src="https://img.shields.io/badge/Swift-6.0-orange.svg" alt="Swift 6.0"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"></a>
+  <a href="https://swift.org"><img src="https://img.shields.io/badge/Swift-6.0+-F05138?logo=swift&logoColor=white" alt="Swift 6.0+"></a>
+  <a href="https://developer.apple.com"><img src="https://img.shields.io/badge/iOS-17+-000000?logo=apple" alt="iOS 17+"></a>
+  <a href="https://developer.apple.com"><img src="https://img.shields.io/badge/macOS-14+-000000?logo=apple" alt="macOS 14+"></a>
+  <a href="https://developer.apple.com"><img src="https://img.shields.io/badge/tvOS-17+-000000?logo=apple" alt="tvOS 17+"></a>
+  <a href="https://developer.apple.com"><img src="https://img.shields.io/badge/watchOS-10+-000000?logo=apple" alt="watchOS 10+"></a>
+  <a href="https://developer.apple.com"><img src="https://img.shields.io/badge/visionOS-1+-000000?logo=apple" alt="visionOS 1+"></a>
 </p>
 
-SettingsKit provides a declarative API for building settings interfaces that feel native to iOS and macOS. Define your settings hierarchy with simple, composable building blocks, and get automatic support for navigation, search, and multiple presentation styles out of the box.
+<div align="center">
+  <img width="600" alt="Preview" src="https://github.com/user-attachments/assets/7d937cbd-182d-4715-b030-fd172a9cdc08" />
+</div>
 
-<img width="1280" height="640" alt="githubsocialpreview" src="https://github.com/user-attachments/assets/7d937cbd-182d-4715-b030-fd172a9cdc08" />
 
-## Features
+## Overview
 
 - **Declarative API** - Build settings hierarchies with intuitive SwiftUI-style syntax
 - **Built-in Search** - Automatic search functionality with intelligent filtering and scoring
@@ -28,20 +28,15 @@ SettingsKit provides a declarative API for building settings interfaces that fee
 - **Customizable** - Extend with custom styles and search implementations
 - **Platform Adaptive** - Works seamlessly on iOS and macOS with appropriate navigation patterns
 
+
+## Requirements
+
+- Swift 6.0+
+- iOS 17+ / macOS 14+ / watchOS 10+ / tvOS 17+ / visionOS 1+
+- Xcode 16.0+
+
+
 ## Installation
-
-### Swift Package Manager
-
-Add SettingsKit to your project through Xcode:
-
-1. File → Add Package Dependencies
-2. Enter the repository URL
-```
-https://github.com/aeastr/SettingsKit.git
-```
-4. Select the version you want to use
-
-Or add it to your `Package.swift`:
 
 ```swift
 dependencies: [
@@ -49,7 +44,14 @@ dependencies: [
 ]
 ```
 
-## Quick Start
+```swift
+import SettingsKit
+```
+
+
+## Usage
+
+### Quick Start
 
 ```swift
 import SwiftUI
@@ -64,7 +66,6 @@ class AppSettings {
     var soundEnabled = true
     var autoLockDelay: Double = 300
     var hardwareAcceleration = true
-    // ... 20+ more settings
 }
 
 struct MySettings: SettingsContainer {
@@ -95,13 +96,9 @@ struct MySettings: SettingsContainer {
         } icon: {
             SettingsIcon("lock.shield", color: .blue)
         }
-
-        // ... more groups
     }
 }
 ```
-
-## Core Concepts
 
 ### Settings Container
 
@@ -181,7 +178,6 @@ CustomSettingsGroup("Advanced Tools", systemImage: "hammer") {
         Text("Your Custom UI")
             .font(.largeTitle)
 
-        // Any SwiftUI view you want
         Button("Custom Action") {
             performAction()
         }
@@ -190,15 +186,11 @@ CustomSettingsGroup("Advanced Tools", systemImage: "hammer") {
 }
 ```
 
-Custom groups are indexed and searchable (by title, icon, and tags), but their content is rendered as-is without indexing individual elements. This is perfect for:
-- Complex custom interfaces that don't use standard settings controls
-- Charts, graphs, or data visualizations
-- Custom layouts that need full control over presentation
-- Third-party UI components
+Custom groups are indexed and searchable (by title, icon, and tags), but their content is rendered as-is without indexing individual elements.
 
 ### Using SwiftUI Views Directly
 
-Inside groups, use standard SwiftUI controls directly—no wrapper needed:
+Inside groups, use standard SwiftUI controls directly:
 
 ```swift
 SettingsGroup("Sound", systemImage: "speaker.wave.2") {
@@ -224,10 +216,6 @@ SettingsGroup("Display", systemImage: "sun.max") {
         .indexed("Brightness")
 }
 ```
-
-#### Why is `.indexed()` needed?
-
-SwiftUI doesn't provide a way to extract label text from views at runtime. When you write `Toggle("Dark Mode", ...)`, the "Dark Mode" string is embedded in the view's generic type signature and is inaccessible to frameworks. The `.indexed()` modifier explicitly provides searchable metadata.
 
 #### `.indexed()` API
 
@@ -262,9 +250,6 @@ struct AccessibilityTags: SettingsTagSet {
 Toggle("Dark Mode", isOn: $dark)
     .indexed("Dark Mode", tagSet: ThemeTags())
 
-Toggle("Reduce Motion", isOn: $reduceMotion)
-    .indexed("Reduce Motion", tagSet: AccessibilityTags())
-
 // Combine multiple tag sets
 Toggle("High Contrast", isOn: $highContrast)
     .indexed("High Contrast", tagSets: ThemeTags(), AccessibilityTags())
@@ -290,27 +275,66 @@ SettingsGroup("General", systemImage: "gear") {
 }
 ```
 
-## Built-in Styles
+### Extracted Settings Groups
 
-### Sidebar Style (Default)
+Extract complex groups into separate structures:
 
-Perfect for apps with split-view navigation (default on all platforms):
+```swift
+struct DeveloperSettings: SettingsContent {
+    @Bindable var settings: AppSettings
+
+    var body: some SettingsContent {
+        SettingsGroup("Developer", systemImage: "hammer") {
+            Toggle("Debug Mode", isOn: $settings.debugMode)
+
+            if settings.debugMode {
+                Toggle("Verbose Logging", isOn: $settings.verboseLogging)
+            }
+        }
+    }
+}
+
+// Use it in your main settings
+var settingsBody: some SettingsContent {
+    DeveloperSettings(settings: settings)
+}
+```
+
+### Conditional Content
+
+Show or hide settings based on state:
+
+```swift
+SettingsGroup("Advanced", systemImage: "gearshape.2") {
+    Toggle("Enable Advanced Features", isOn: $showAdvanced)
+
+    if showAdvanced {
+        Toggle("Advanced Option 1", isOn: $option1)
+        Toggle("Advanced Option 2", isOn: $option2)
+    }
+}
+```
+
+
+## Customization
+
+### Built-in Styles
+
+**Sidebar Style (Default)** - Split-view navigation:
 
 ```swift
 MySettings(settings: settings)
     .settingsStyle(.sidebar)
 ```
 
-### Single Column Style
-
-Clean, single-column list presentation:
+**Single Column Style** - Clean, single-column list:
 
 ```swift
 MySettings(settings: settings)
     .settingsStyle(.single)
 ```
 
-## Custom Styles
+### Custom Styles
 
 Create your own presentation styles by conforming to `SettingsStyle`:
 
@@ -353,20 +377,18 @@ MySettings(settings: settings)
     .settingsStyle(MyCustomStyle())
 ```
 
-## Search
+### Search
 
-Search is automatic and works out of the box. `SettingsGroup` titles are always searchable. Use `.indexed()` on individual views to make them searchable too (see [Making Views Searchable](#making-views-searchable-with-indexed) above).
+Search is automatic and works out of the box. `SettingsGroup` titles are always searchable. Use `.indexed()` on individual views to make them searchable too.
 
-### Adding Tags to Groups
-
-Groups can also have additional search tags:
+#### Adding Tags to Groups
 
 ```swift
 SettingsGroup("Notifications", systemImage: "bell")
     .settingsTags(["alerts", "sounds", "badges", "push"])
 ```
 
-### Custom Search
+#### Custom Search
 
 Implement your own search logic:
 
@@ -381,63 +403,6 @@ MySettings(settings: settings)
     .settingsSearch(FuzzySearch())
 ```
 
-## Advanced Features
-
-### Extracted Settings Groups
-
-Extract complex groups into separate structures:
-
-```swift
-struct DeveloperSettings: SettingsContent {
-    @Bindable var settings: AppSettings
-
-    var body: some SettingsContent {
-        SettingsGroup("Developer", systemImage: "hammer") {
-            Toggle("Debug Mode", isOn: $settings.debugMode)
-
-            if settings.debugMode {
-                Toggle("Verbose Logging", isOn: $settings.verboseLogging)
-            }
-        }
-    }
-}
-
-// Use it in your main settings
-var settingsBody: some SettingsContent {
-    // Other groups...
-
-    DeveloperSettings(settings: settings)
-}
-```
-
-### Conditional Content
-
-Show or hide settings based on state:
-
-```swift
-SettingsGroup("Advanced", systemImage: "gearshape.2") {
-    Toggle("Enable Advanced Features", isOn: $showAdvanced)
-
-    if showAdvanced {
-        Toggle("Advanced Option 1", isOn: $option1)
-        Toggle("Advanced Option 2", isOn: $option2)
-    }
-}
-```
-
-### Custom Groups with Tags
-
-Add tags to custom groups to improve searchability:
-
-```swift
-CustomSettingsGroup("Developer Tools", systemImage: "hammer")
-    .settingsTags(["debug", "testing", "advanced"])
-{
-    YourCustomDeveloperUI()
-}
-```
-
-The group itself (title, icon, tags) will appear in search results, and tapping it navigates to your custom view.
 
 ## How It Works
 
@@ -451,8 +416,6 @@ SettingsKit separates concerns between **what** settings exist (metadata) and **
 2. **View Layer (Registry)** - Dynamic view builders registered by ID
 3. **Rendering Layer** - Direct SwiftUI view hierarchy with proper state observation
 
-This separation solves a critical challenge: making settings fully searchable while keeping interactive controls responsive and reactive.
-
 ### The Indexing System
 
 When you define settings using `SettingsGroup` and views with `.indexed()`, SettingsKit builds an internal **node tree** that represents your entire settings hierarchy:
@@ -465,7 +428,7 @@ When you define settings using `SettingsGroup` and views with `.indexed()`, Sett
 
 #### The Node Tree (Metadata-Only)
 
-Groups and indexed views become nodes in an indexed tree. **Crucially, nodes store only metadata—no views or content:**
+Groups and indexed views become nodes in an indexed tree. Nodes store only metadata—no views or content:
 
 ```
 SettingsNode Tree:
@@ -486,7 +449,7 @@ Each node stores:
 - **Tags** - Additional keywords for search discoverability
 - **Presentation Mode** - Navigation link or inline section (for groups)
 - **Children** - Nested groups and items (for groups; empty for custom groups)
-- **⚠️ No Content** - Views are NOT stored in nodes
+- **No Content** - Views are NOT stored in nodes
 
 #### The View Registry
 
@@ -509,8 +472,6 @@ if let view = SettingsNodeViewRegistry.shared.view(for: viewID) {
 }
 ```
 
-This registry allows search results to render **actual interactive controls** (Toggle, Slider, TextField, etc.) rather than static text labels. For custom groups, the entire custom view is registered and navigated to when selected.
-
 #### How Search Works
 
 The default search implementation uses intelligent scoring:
@@ -524,8 +485,6 @@ The default search implementation uses intelligent scoring:
    - Tag match: 100 points
 4. **Result Grouping** - Groups matched items by their parent group
 5. **View Lookup** - Retrieves actual view builders from registry for matched items
-
-When you search for "notif", it finds "Notifications" and renders the actual Toggle control with live state binding—not just a text label.
 
 #### Rendering Modes
 
@@ -542,8 +501,6 @@ SettingsKit uses **two different rendering approaches** depending on context:
 - Views are instantiated fresh for each search
 - State bindings remain live and reactive
 - Allows showing actual controls in search results
-
-This dual approach ensures optimal performance: normal navigation uses direct view hierarchies (fast), while search results use dynamic registry lookups (flexible).
 
 #### Navigation Architecture
 
@@ -562,8 +519,6 @@ SettingsKit provides two navigation styles that work with the same indexed tree:
 - Inline groups render as section headers
 - Search results push onto the navigation stack
 
-The node tree's awareness of **navigation vs. inline presentation** ensures groups render correctly in both styles.
-
 #### Stable IDs
 
 Node UUIDs are generated using **hash-based stable IDs** rather than random UUIDs:
@@ -576,109 +531,41 @@ let hashValue = hasher.finalize()
 // Convert hash to UUID bytes...
 ```
 
-This ensures the same setting always gets the same ID across multiple `makeNodes()` calls, which is critical for:
-- Matching search results to actual views in the registry
-- Maintaining navigation state
-- View identity and animation stability
+This ensures the same setting always gets the same ID across multiple `makeNodes()` calls.
 
 ### Why This Design?
 
 This hybrid architecture solves multiple challenges simultaneously:
 
-- **✅ Reactive Controls** - Direct view hierarchy preserves SwiftUI state observation
-- **✅ Powerful Search** - Metadata nodes enable fast, comprehensive search
-- **✅ Interactive Search Results** - Registry allows rendering actual controls in search
-- **✅ Performance** - Lazy indexing builds the tree only when needed
-- **✅ Dynamic Content** - Supports conditional settings (if/else, ForEach)
-- **✅ Platform Adaptive** - Navigation adapts to macOS vs iOS patterns
-- **✅ Extensibility** - Custom search and styles work with the same tree
-- **✅ Type Safety** - SwiftUI result builders validate at compile time
+- **Reactive Controls** - Direct view hierarchy preserves SwiftUI state observation
+- **Powerful Search** - Metadata nodes enable fast, comprehensive search
+- **Interactive Search Results** - Registry allows rendering actual controls in search
+- **Performance** - Lazy indexing builds the tree only when needed
+- **Dynamic Content** - Supports conditional settings (if/else, ForEach)
+- **Platform Adaptive** - Navigation adapts to macOS vs iOS patterns
+- **Extensibility** - Custom search and styles work with the same tree
+- **Type Safety** - SwiftUI result builders validate at compile time
 
-### The Journey: From Problem to Solution
+### Platform Differences
 
-The hybrid view registry architecture wasn't the original design—it emerged from solving a critical macOS bug. Here's how we got here:
-
-#### The Original Problem
-
-Early versions stored view content directly in nodes using `AnyView` type erasure. This worked fine initially, but revealed a **critical macOS-only bug**: when using `NavigationSplitView` with selection-based navigation, interactive controls (Toggle, Slider, TextField, etc.) in the detail pane stopped updating visually. State changed correctly, but the UI appeared frozen.
-
-#### Attempted Solutions
-
-We tried multiple approaches to fix the control update issue:
-
-1. **Force re-rendering with `.id()` modifier** ❌
-   - Adding unique IDs to force SwiftUI to rebuild views
-   - Didn't work because the problem was deeper in the view hierarchy
-
-2. **Repositioning `navigationDestination`** ❌
-   - Moving the navigation destination modifier to different locations
-   - No effect on control updates
-
-3. **Extracting separate `DetailContentView`** ❌
-   - Thought reducing view nesting might help
-   - Same issue persisted
-
-4. **Rendering from nodes instead of cached content** ❌
-   - Attempted to rebuild views from node metadata on each render
-   - Still had AnyView type erasure breaking state observation
-
-5. **Platform-specific navigation** ✅ (Partial)
-   - macOS: Destination-based `NavigationLink` (creates fresh view hierarchies)
-   - iOS: Selection-based `NavigationLink` (no issues observed)
-   - **Fixed control updates** but created a new problem: views rebuilt on every state change, causing TextField to lose focus on each keystroke
-
-#### The Root Cause
-
-The core issue was **AnyView type erasure combined with macOS NavigationSplitView's aggressive caching**. When content was wrapped in `AnyView` and passed through the node system, SwiftUI's dependency tracking broke down. macOS's NavigationSplitView appeared to cache detail content more aggressively than iOS, making the problem platform-specific.
-
-#### The Breakthrough
-
-The key insight came from asking: **"Can we have a hybrid system where we have nodes that we can grab *their* view for that particular node, and use it in search?"**
-
-This led to the current architecture:
-
-1. **Nodes become metadata-only** - No `AnyView` content stored in nodes
-2. **View registry maps IDs to builders** - Global singleton stores `UUID → () -> AnyView`
-3. **Normal rendering uses direct hierarchy** - No type erasure, full state observation
-4. **Search results use registry lookup** - Can render actual controls dynamically
-
-#### Why It Works
-
-This architecture solves the problem because:
-
-- **No AnyView in normal paths** - Direct view hierarchy preserves SwiftUI's state dependency tracking
-- **Platform-specific navigation is isolated** - macOS workaround doesn't affect iOS
-- **Search gets actual views** - Registry lookup provides real controls, not just metadata
-- **Stable IDs enable matching** - Hash-based UUIDs ensure registry lookups succeed
-- **View identity is stable** - No more TextField losing focus from unnecessary rebuilds
-
-The hybrid approach gives us the best of both worlds: searchable metadata trees + reactive SwiftUI views.
-
-## Platform Differences
-
-### iOS
+**iOS**:
 - Uses `NavigationStack` for push navigation in single-column style
 - Uses `NavigationSplitView` with selection-based navigation in sidebar style
 - Supports search with `.searchable()`
 - Inline groups render as section headers
 
-### macOS
+**macOS**:
 - Uses `NavigationSplitView` for sidebar navigation in sidebar style
 - Destination-based navigation links for proper control state updates
 - Detail pane has its own `NavigationStack` for deeper navigation
 - Search results show actual interactive controls via view registry
 
-## Requirements
-
-- iOS 17.0+ / macOS 14.0+ / watchOS 10.0+ / tvOS 17.0+ / visionOS 1.0+
-- Swift 6.0+
-- Xcode 16.0+
-
-## License
-
-SettingsKit is available under the MIT license. See the LICENSE file for more info.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions welcome. Please feel free to submit a Pull Request.
 
+
+## License
+
+MIT. See [LICENSE](LICENSE) for details.
