@@ -1,19 +1,43 @@
 import SwiftUI
 
-/// A type that applies a custom appearance to settings components.
+/// Controls where a built-in settings style presents search UI.
+public enum SettingsSearchPlacement: Sendable, Hashable {
+    /// Show search only at the root of the settings hierarchy.
+    case root
+
+    /// Show search only inside navigated destinations.
+    case destinations
+
+    /// Show search at the root and inside navigated destinations.
+    case all
+
+    /// Do not show built-in search UI.
+    case none
+
+    var includesRoot: Bool {
+        self == .root || self == .all
+    }
+
+    var includesDestinations: Bool {
+        self == .destinations || self == .all
+    }
+}
+
+/// A type that controls a complete built-in settings presentation.
 ///
-/// To configure the style for all settings components, use the ``settingsStyle(_:)`` modifier.
+/// To configure the style for all settings components, use the `settingsStyle(_:)` modifier.
+///
+/// A settings style owns the container and group presentation. Controls inside groups remain ordinary SwiftUI views; customize them with standard SwiftUI view modifiers and control styles in the settings declaration, group body, or container body.
 ///
 /// ## Creating Custom Styles
 ///
-/// Create custom styles by defining a type that conforms to `SettingsStyle`
-/// and implementing the required methods:
+/// Create custom styles by defining a type that conforms to `SettingsStyle` and implementing the required methods:
 ///
 /// ```swift
 /// struct MySettingsStyle: SettingsStyle {
 ///     func makeContainer(configuration: ContainerConfiguration) -> some View {
 ///         NavigationStack(path: configuration.navigationPath) {
-///             List {
+///             Form {
 ///                 configuration.content
 ///             }
 ///             .navigationTitle(configuration.title)
@@ -22,7 +46,7 @@ import SwiftUI
 ///
 ///     func makeGroup(configuration: GroupConfiguration) -> some View {
 ///         NavigationLink {
-///             List {
+///             Form {
 ///                 configuration.content
 ///             }
 ///             .navigationTitle(configuration.title)
@@ -31,15 +55,14 @@ import SwiftUI
 ///         }
 ///     }
 ///
-///     func makeItem(configuration: ItemConfiguration) -> some View {
-///         configuration.content
-///     }
 /// }
 /// ```
 public protocol SettingsStyle {
+    /// The view that renders the complete settings presentation.
     associatedtype ContainerBody: View
+
+    /// The view that renders an individual group.
     associatedtype GroupBody: View
-    associatedtype ItemBody: View
 
     /// Configuration for the settings container.
     typealias ContainerConfiguration = SettingsContainerConfiguration
@@ -47,17 +70,11 @@ public protocol SettingsStyle {
     /// Configuration for a settings group.
     typealias GroupConfiguration = SettingsGroupConfiguration
 
-    /// Configuration for a settings item.
-    typealias ItemConfiguration = SettingsItemConfiguration
-
     /// Creates a view that represents the settings container.
     @ViewBuilder func makeContainer(configuration: ContainerConfiguration) -> ContainerBody
 
     /// Creates a view that represents a settings group.
     @ViewBuilder func makeGroup(configuration: GroupConfiguration) -> GroupBody
-
-    /// Creates a view that represents a settings item.
-    @ViewBuilder func makeItem(configuration: ItemConfiguration) -> ItemBody
 }
 
 // MARK: - Configuration Types
@@ -75,18 +92,21 @@ public struct SettingsContainerConfiguration: @unchecked Sendable {
 
     /// The navigation path for programmatic navigation.
     public let navigationPath: Binding<NavigationPath>
+
+    /// The selected top-level destination in split navigation.
+    public let selectedGroup: Binding<SettingsGroupConfiguration?>
 }
 
 /// The properties of a settings group that can be used by a style.
 public struct SettingsGroupConfiguration: @unchecked Sendable, Hashable {
+    /// The stable identity of the group.
+    public let id: UUID
+
     /// The title of the group.
     public let title: String
 
-    /// The SF Symbol name for the icon, if any (used for search results fallback).
-    public let iconName: String?
-
-    /// The custom icon view, if any.
-    public let iconView: AnyView?
+    /// The SF Symbol associated with the group, if any.
+    public let systemImage: String?
 
     /// The footer text of the group, if any.
     public let footer: String?
@@ -100,51 +120,26 @@ public struct SettingsGroupConfiguration: @unchecked Sendable, Hashable {
     /// The child nodes of this group (for search purposes).
     public let children: [SettingsNode]
 
-    /// Internal ID for hashing
-    private let id = UUID()
-
-    /// A view that represents the group's label (title + icon).
+    /// The semantic group label. Styles decide its typography and placement.
     @ViewBuilder
     public var label: some View {
-        Label {
+        if let systemImage {
+            Label(title, systemImage: systemImage)
+        } else {
             Text(title)
-        } icon: {
-            if let iconView = iconView {
-                iconView
-            } else if let iconName = iconName {
-                Image(systemName: iconName)
-            }
         }
     }
 
+    /// Returns whether two configurations represent the same group identity.
     public static func == (lhs: SettingsGroupConfiguration, rhs: SettingsGroupConfiguration) -> Bool {
         lhs.id == rhs.id
     }
 
+    /// Hashes the configuration by its group identifier.
+    ///
+    /// - Parameter hasher: The hasher to update.
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
-    }
-}
-
-/// The properties of a settings item that can be used by a style.
-public struct SettingsItemConfiguration: @unchecked Sendable {
-    /// The title of the item.
-    public let title: String
-
-    /// The icon of the item, if any.
-    public let icon: String?
-
-    /// The content of the item.
-    public let content: AnyView
-
-    /// A view that represents the item's label (title + icon).
-    @ViewBuilder
-    public var label: some View {
-        if let icon = icon {
-            Label(title, systemImage: icon)
-        } else {
-            Text(title)
-        }
     }
 }
 
@@ -168,8 +163,10 @@ extension EnvironmentValues {
 public struct AnySettingsStyle: SettingsStyle, @unchecked Sendable {
     private let _makeContainer: (SettingsContainerConfiguration) -> AnyView
     private let _makeGroup: (SettingsGroupConfiguration) -> AnyView
-    private let _makeItem: (SettingsItemConfiguration) -> AnyView
 
+    /// Erases a concrete full-presentation style.
+    ///
+    /// - Parameter style: The style to wrap.
     public init<S: SettingsStyle>(_ style: S) {
         _makeContainer = { configuration in
             AnyView(style.makeContainer(configuration: configuration))
@@ -177,45 +174,55 @@ public struct AnySettingsStyle: SettingsStyle, @unchecked Sendable {
         _makeGroup = { configuration in
             AnyView(style.makeGroup(configuration: configuration))
         }
-        _makeItem = { configuration in
-            AnyView(style.makeItem(configuration: configuration))
-        }
     }
 
+    /// Creates the container view with the wrapped style.
     public func makeContainer(configuration: SettingsContainerConfiguration) -> some View {
         _makeContainer(configuration)
     }
 
+    /// Creates a group view with the wrapped style.
     public func makeGroup(configuration: SettingsGroupConfiguration) -> some View {
         _makeGroup(configuration)
     }
 
-    public func makeItem(configuration: SettingsItemConfiguration) -> some View {
-        _makeItem(configuration)
-    }
 }
 
 // MARK: - View Extension
 
 public extension View {
-    /// Sets the style for all settings components within this view.
+    /// Sets the full-presentation style for settings in this view hierarchy.
+    ///
+    /// - Parameter style: The style used for the container and groups.
+    /// - Returns: A view with the style in its environment.
     func settingsStyle<S: SettingsStyle>(_ style: S) -> some View {
         environment(\.settingsStyle, AnySettingsStyle(style))
+            .environment(\.settingsGroupStyle, AnySettingsGroupStyle(adapting: style))
     }
 }
 
 // MARK: - Static Convenience
 
 public extension SettingsStyle where Self == SidebarSettingsStyle {
-    /// A settings style with sidebar navigation (default).
+    /// The built-in split-view sidebar style.
     static var sidebar: SidebarSettingsStyle {
         SidebarSettingsStyle()
+    }
+
+    /// Creates the sidebar style with explicit search placement.
+    static func sidebar(search: SettingsSearchPlacement, rootTitleDisplayMode: SettingsRootTitleDisplayMode = .automatic) -> SidebarSettingsStyle {
+        SidebarSettingsStyle(search: search, rootTitleDisplayMode: rootTitleDisplayMode)
     }
 }
 
 public extension SettingsStyle where Self == SingleColumnSettingsStyle {
-    /// A single-column settings style.
+    /// The built-in single-column navigation style.
     static var single: SingleColumnSettingsStyle {
         SingleColumnSettingsStyle()
+    }
+
+    /// Creates the single-column style with explicit search placement.
+    static func single(search: SettingsSearchPlacement) -> SingleColumnSettingsStyle {
+        SingleColumnSettingsStyle(search: search)
     }
 }

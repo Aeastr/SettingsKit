@@ -1,15 +1,25 @@
 import SwiftUI
 
-/// The default settings search implementation.
+/// The built-in settings search with normalized relevance scoring.
+///
+/// Exact title matches rank above prefixes, substrings, and tag matches. Results with equal scores retain their declaration order. See <doc:IndexingAndSearch> for the indexing model.
 public struct DefaultSettingsSearch: SettingsSearch {
+    /// Creates the default settings search.
     public init() {}
 
+    /// Searches and relevance-sorts a settings metadata hierarchy.
+    ///
+    /// - Parameters:
+    ///   - nodes: The root metadata nodes to traverse.
+    ///   - query: The text to match against titles and tags.
+    /// - Returns: Deduplicated results ordered by relevance and declaration.
     public func search(nodes: [SettingsNode], query: String) -> [SettingsSearchResult] {
         var results: [SettingsSearchResult] = []
         var orderIndex = 0
         searchNodes(nodes, query: query.lowercased(), results: &results, orderIndex: &orderIndex)
 
-        // Deduplicate by group ID (keep the one with higher score)
+        // Collapse matches under the same destination while preserving every
+        // matched indexed control for custom result renderers.
         var seenIDs: [UUID: SettingsSearchResult] = [:]
         for result in results {
             let id = result.group.id
@@ -17,9 +27,19 @@ public struct DefaultSettingsSearch: SettingsSearch {
 
             if let existing = seenIDs[id] {
                 let existingScore = matchScore(for: existing.group, query: query.lowercased())
-                if score > existingScore {
-                    seenIDs[id] = result
+                let preferred = score > existingScore ? result : existing
+                let matchedItems = (existing.matchedItems + result.matchedItems).reduce(into: [SettingsNode]()) { items, item in
+                    guard !items.contains(where: { $0.id == item.id }) else { return }
+                    items.append(item)
                 }
+
+                seenIDs[id] = SettingsSearchResult(
+                    group: preferred.group,
+                    matchedItems: matchedItems,
+                    isNavigation: existing.isNavigation || result.isNavigation,
+                    orderIndex: min(existing.orderIndex, result.orderIndex),
+                    parentGroup: preferred.parentGroup ?? existing.parentGroup ?? result.parentGroup
+                )
             } else {
                 seenIDs[id] = result
             }
@@ -89,35 +109,91 @@ public struct DefaultSettingsSearch: SettingsSearch {
         return 0
     }
 
-    private func searchNodes(_ nodes: [SettingsNode], query: String, results: inout [SettingsSearchResult], orderIndex: inout Int, navigationParent: SettingsNode? = nil) {
+    private func searchNodes(
+        _ nodes: [SettingsNode],
+        query: String,
+        results: inout [SettingsSearchResult],
+        orderIndex: inout Int,
+        navigationAncestors: [SettingsNode] = []
+    ) {
         for node in nodes {
+            guard node.isIncludedInSearch else { continue }
             let currentIndex = orderIndex
             orderIndex += 1
 
             switch node {
-            case .group(_, let title, _, let tags, let presentation, let children):
+            case .group(_, let title, _, let tags, let presentation, let children, _):
                 let normalizedQuery = normalize(query)
                 let groupMatches = normalize(title).contains(normalizedQuery) ||
                                   tags.contains(where: { normalize($0).contains(normalizedQuery) })
 
                 let isLeafGroup = !children.isEmpty && children.allSatisfy { !$0.isGroup }
 
-                // Determine the parent for child results
-                let parentForChildren = presentation == .navigation ? node : navigationParent
+                let navigationParent = navigationAncestors.last
+                let ancestorsForChildren = presentation == .navigation
+                    ? navigationAncestors + [node]
+                    : navigationAncestors
 
                 if isLeafGroup {
                     // Leaf group: check if group or any searchable children match
                     let searchableChildren = children.filter { $0.isSearchable }
-                    let childMatches = searchableChildren.contains { child in
+                    let matchingChildren = searchableChildren.filter { child in
                         normalize(child.title).contains(normalizedQuery) ||
                         child.tags.contains(where: { normalize($0).contains(normalizedQuery) })
                     }
+                    let childMatches = !matchingChildren.isEmpty
 
-                    // Only add navigation groups as leaf results, skip inline groups
-                    if presentation == .navigation && (groupMatches || childMatches) {
-                        results.append(SettingsSearchResult(group: node, matchedItems: children, isNavigation: false, orderIndex: currentIndex, parentGroup: navigationParent))
+                    // Root inline groups remain directly renderable. Matches nested in
+                    // navigation content resolve to their nearest destination while
+                    // retaining the matching controls for custom result renderers.
+                    if groupMatches || childMatches {
+                        // A group-title match represents the whole group. A child-only
+                        // match contains only the controls that actually matched.
+                        let matchedItems = groupMatches ? searchableChildren : matchingChildren
+                        let resultGroup: SettingsNode
+                        let resultParent: SettingsNode?
+                        let isNavigation: Bool
+
+                        if presentation == .navigation {
+                            resultGroup = node
+                            resultParent = navigationParent
+                            isNavigation = true
+                        } else if let navigationParent {
+                            resultGroup = navigationParent
+                            resultParent = navigationAncestors.dropLast().last
+                            isNavigation = true
+                        } else {
+                            resultGroup = node
+                            resultParent = nil
+                            isNavigation = false
+                        }
+
+                        results.append(SettingsSearchResult(
+                            group: resultGroup,
+                            matchedItems: matchedItems,
+                            isNavigation: isNavigation,
+                            orderIndex: currentIndex,
+                            parentGroup: resultParent
+                        ))
                     }
                 } else {
+                    // Mixed groups can contain controls alongside subpages. Those
+                    // controls must not disappear merely because a sibling is a group.
+                    let directItems = children.filter { !$0.isGroup && $0.isSearchable }
+                    let matchingItems = groupMatches ? directItems : directItems.filter {
+                        matchScore(for: $0, query: query) > 0
+                    }
+                    if !matchingItems.isEmpty {
+                        let destination = presentation == .navigation ? node : (navigationParent ?? node)
+                        results.append(SettingsSearchResult(
+                            group: destination,
+                            matchedItems: matchingItems,
+                            isNavigation: presentation == .navigation || navigationParent != nil,
+                            orderIndex: currentIndex,
+                            parentGroup: presentation == .navigation
+                                ? navigationParent : navigationAncestors.dropLast().last
+                        ))
+                    }
                     // Parent group
                     if groupMatches {
                         if presentation == .navigation {
@@ -125,18 +201,18 @@ public struct DefaultSettingsSearch: SettingsSearch {
                             results.append(SettingsSearchResult(group: node, matchedItems: [], isNavigation: true, orderIndex: currentIndex, parentGroup: navigationParent))
 
                             // Add all immediate navigation children as separate results
-                            for child in children {
+                            for child in children where child.isIncludedInSearch {
                                 let childIndex = orderIndex
                                 orderIndex += 1
 
-                                if case .group(_, _, _, _, let childPresentation, let grandchildren) = child {
+                                if case .group(_, _, _, _, let childPresentation, let grandchildren, _) = child {
                                     // Skip inline child groups
                                     guard childPresentation == .navigation else { continue }
 
                                     // Leaf child = has indexed items (not groups). Empty children = navigation group.
                                     let isLeafChild = !grandchildren.isEmpty && grandchildren.allSatisfy { !$0.isGroup }
                                     if isLeafChild {
-                                        results.append(SettingsSearchResult(group: child, matchedItems: grandchildren, isNavigation: false, orderIndex: childIndex, parentGroup: node))
+                                        results.append(SettingsSearchResult(group: child, matchedItems: grandchildren.filter { $0.isSearchable }, isNavigation: false, orderIndex: childIndex, parentGroup: node))
                                     } else {
                                         results.append(SettingsSearchResult(group: child, matchedItems: [], isNavigation: true, orderIndex: childIndex, parentGroup: node))
                                     }
@@ -144,18 +220,18 @@ public struct DefaultSettingsSearch: SettingsSearch {
                             }
                         } else {
                             // Inline group that matches: add all its navigation children as results
-                            for child in children {
+                            for child in children where child.isIncludedInSearch {
                                 let childIndex = orderIndex
                                 orderIndex += 1
 
-                                if case .group(_, _, _, _, let childPresentation, let grandchildren) = child {
+                                if case .group(_, _, _, _, let childPresentation, let grandchildren, _) = child {
                                     // Only add navigation child groups
                                     guard childPresentation == .navigation else { continue }
 
                                     // Leaf child = has indexed items (not groups). Empty children = navigation group.
                                     let isLeafChild = !grandchildren.isEmpty && grandchildren.allSatisfy { !$0.isGroup }
                                     if isLeafChild {
-                                        results.append(SettingsSearchResult(group: child, matchedItems: grandchildren, isNavigation: false, orderIndex: childIndex, parentGroup: navigationParent))
+                                        results.append(SettingsSearchResult(group: child, matchedItems: grandchildren.filter { $0.isSearchable }, isNavigation: false, orderIndex: childIndex, parentGroup: navigationParent))
                                     } else {
                                         results.append(SettingsSearchResult(group: child, matchedItems: [], isNavigation: true, orderIndex: childIndex, parentGroup: navigationParent))
                                     }
@@ -164,7 +240,13 @@ public struct DefaultSettingsSearch: SettingsSearch {
                         }
                     }
                     // Always recurse into children to find deeper matches
-                    searchNodes(children, query: query, results: &results, orderIndex: &orderIndex, navigationParent: parentForChildren)
+                    searchNodes(
+                        children,
+                        query: query,
+                        results: &results,
+                        orderIndex: &orderIndex,
+                        navigationAncestors: ancestorsForChildren
+                    )
                 }
 
             case .item:

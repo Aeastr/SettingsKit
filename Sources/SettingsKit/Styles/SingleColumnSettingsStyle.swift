@@ -1,21 +1,29 @@
 import SwiftUI
 
-/// A single-column settings style with standard navigation and list appearance.
+/// A single-column settings style with standard navigation and form appearance.
 public struct SingleColumnSettingsStyle: @preconcurrency SettingsStyle {
-    public init() {}
+    private let searchPlacement: SettingsSearchPlacement
 
+    /// Creates the built-in single-column style.
+    ///
+    /// - Parameter search: Where the style presents search UI.
+    public init(search: SettingsSearchPlacement = .all) {
+        self.searchPlacement = search
+    }
+
+    /// Creates a navigation-stack settings container.
     @MainActor
     public func makeContainer(configuration: ContainerConfiguration) -> some View {
         NavigationStack(path: configuration.navigationPath) {
             Group {
-                if let searchText = configuration.searchText {
-                    List {
+                if searchPlacement.includesRoot, let searchText = configuration.searchText {
+                    Form {
                         configuration.content
                     }
                     .navigationTitle(configuration.title)
                     .searchable(text: searchText, prompt: "Search settings")
                 } else {
-                    List {
+                    Form {
                         configuration.content
                     }
                     .navigationTitle(configuration.title)
@@ -25,17 +33,26 @@ public struct SingleColumnSettingsStyle: @preconcurrency SettingsStyle {
                 }
             }
             .navigationDestination(for: SettingsGroupConfiguration.self) { groupConfig in
-                List {
+#if os(iOS)
+                IOSSearchableSettingsDetail(
+                    configuration: groupConfig,
+                    navigationPath: configuration.navigationPath,
+                    searchEnabled: searchPlacement.includesDestinations
+                )
+#else
+                Form {
                     groupConfig.content
                 }
                 .navigationTitle(groupConfig.title)
 #if !os(tvOS) && !os(macOS)
                 .navigationBarTitleDisplayMode(.inline)
 #endif
+#endif
             }
         }
     }
 
+    /// Creates a destination link or inline section for a group.
     @MainActor
     public func makeGroup(configuration: GroupConfiguration) -> some View {
         switch configuration.presentation {
@@ -56,8 +73,4 @@ public struct SingleColumnSettingsStyle: @preconcurrency SettingsStyle {
         }
     }
 
-    @MainActor
-    public func makeItem(configuration: ItemConfiguration) -> some View {
-        configuration.content
-    }
 }

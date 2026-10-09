@@ -1,52 +1,63 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
-/// A settings style using a split view with sidebar navigation.
+/// Root toolbar title choices, independent of nested destination styles.
+public enum SettingsRootTitleDisplayMode: Sendable {
+    case automatic
+    case inline
+    case inlineLarge
+
+    var toolbarMode: ToolbarTitleDisplayMode {
+        switch self {
+        case .automatic: .automatic
+        case .inline: .inline
+        case .inlineLarge:
+            #if os(watchOS) || os(tvOS)
+            .inline
+            #else
+            .inlineLarge
+            #endif
+        }
+    }
+}
+
+/// A full settings style that uses a split view with sidebar navigation.
 ///
-/// ## Navigation Architecture
+/// The style keeps one selected group in the split view and renders that
+/// selection in a central detail hierarchy. macOS uses a custom System
+/// Settings-inspired detail surface, while iOS and iPadOS use native forms.
 ///
-/// This style uses different navigation approaches on macOS vs iOS to provide optimal behavior on each platform.
-///
-/// ### Platform-Specific Navigation
-///
-/// **macOS:**
-/// - Uses **destination-based** `NavigationLink` with nested `NavigationStack` in each destination
-/// - Each navigation creates a fresh view hierarchy with proper state observation
-/// - Controls update reactively ✅
-/// - Nested navigation works (General → AirDrop pushes correctly) ✅
-/// - Works because macOS sidebar is always visible, so destination-based links push into detail column
-///
-/// **iOS/iPadOS:**
-/// - Uses **selection-based** `NavigationLink(value:)` with centralized detail view
-/// - Selection-based navigation works seamlessly on iOS
-/// - Works in both portrait (sidebar collapsed) and landscape (sidebar visible) ✅
-/// - Rotation doesn't reset navigation since we always use the same approach ✅
-///
-/// ### Why Platform-Specific?
-///
-/// Early versions used the same navigation approach on all platforms, which revealed a critical macOS-only bug:
-/// controls in the detail view wouldn't visually update even though state changed correctly. This was caused by
-/// **AnyView type erasure combined with macOS NavigationSplitView's aggressive caching**.
-///
-/// The solution was to:
-/// 1. Remove content from nodes entirely (metadata-only nodes)
-/// 2. Use direct view hierarchy rendering (no AnyView in normal paths)
-/// 3. Create a view registry for search results
-/// 4. Use destination-based navigation on macOS (fresh view hierarchies)
-///
-/// This hybrid architecture solved the problem: normal navigation uses direct view hierarchies preserving
-/// SwiftUI's state observation, while search results use the view registry to render actual interactive controls.
+/// Search uses the same host-scoped metadata and live-view registry as every other presentation. See <doc:SettingsKitArchitecture> for how the rendering paths fit together.
 ///
 public struct SidebarSettingsStyle: SettingsStyle {
-    public init() {}
-    
-    public func makeContainer(configuration: ContainerConfiguration) -> some View {
-        SidebarContainer(configuration: configuration)
+    private let searchPlacement: SettingsSearchPlacement
+    private let rootTitleDisplayMode: SettingsRootTitleDisplayMode
+
+    /// Creates the built-in sidebar style.
+    ///
+    /// - Parameters:
+    ///   - search: Where the style presents search UI.
+    ///   - rootTitleDisplayMode: The title style on the sidebar list itself, without changing destination titles.
+    public init(search: SettingsSearchPlacement = .all, rootTitleDisplayMode: SettingsRootTitleDisplayMode = .automatic) {
+        self.searchPlacement = search
+        self.rootTitleDisplayMode = rootTitleDisplayMode
     }
-    
+
+    /// Creates a split-view settings container.
+    public func makeContainer(configuration: ContainerConfiguration) -> some View {
+        SidebarContainer(
+            configuration: configuration,
+            searchPlacement: searchPlacement,
+            rootTitleDisplayMode: rootTitleDisplayMode
+        )
+    }
+
+    /// Creates a destination link or inline section for a group.
     public func makeGroup(configuration: GroupConfiguration) -> some View {
         switch configuration.presentation {
         case .navigation:
-            // For sidebar, we'll use a custom approach to ensure fresh rendering
             SidebarNavigationLink(configuration: configuration)
         case .inline:
             Section {
@@ -58,74 +69,181 @@ public struct SidebarSettingsStyle: SettingsStyle {
             }
         }
     }
-    
-    public func makeItem(configuration: ItemConfiguration) -> some View {
-        configuration.content
-    }
+
 }
 
-// Custom navigation link that adapts based on platform
-//
-// NAVIGATION APPROACH:
-// - macOS: destination-based (creates fresh view hierarchies)
-// - iOS: selection-based (optimal for split view behavior)
+// A value-based link lets NavigationSplitView own selection on every platform.
+// In particular, macOS must not retain a separate prepared destination inside
+// each sidebar row: AppKit can restore that destination's old control state
+// when the row is revisited even though the binding's model has changed.
 private struct SidebarNavigationLink: View {
     let configuration: SettingsGroupConfiguration
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
-#if os(macOS)
-        // macOS: Use destination-based navigation
-        // WHY: Creates fresh view hierarchies with proper state observation
-        //      Part of the hybrid architecture solution (see file header)
-        destinationBasedLink
-#else
-        // iOS/iPadOS: Use selection-based navigation
-        // WHY: Optimal for NavigationSplitView on iOS (works in all size classes)
-        //      Handles portrait/landscape transitions smoothly
-        selectionBasedLink
-#endif
-    }
-
-    // DESTINATION-BASED NAVIGATION (macOS only)
-    // Creates a fresh NavigationStack for each destination.
-    // Provides proper state observation as part of the hybrid architecture.
-    private var destinationBasedLink: some View {
-        NavigationLink {
-            NavigationStack {
-                List {
-                    // Render directly from view hierarchy for proper state observation
-                    configuration.content
-                }
-                .navigationTitle(configuration.title)
-            }
-        } label: {
-            configuration.label
-        }
-    }
-
-    // SELECTION-BASED NAVIGATION (iOS only)
-    // Uses NavigationLink(value:) which updates the selectedGroup binding
-    // The detail view then renders based on that selection
-    private var selectionBasedLink: some View {
         NavigationLink(value: configuration) {
             configuration.label
         }
     }
 }
 
+#if os(macOS)
+/// The macOS sidebar detail surface uses an app-like scroll layout instead of SwiftUI's platform `Form`, whose default macOS presentation is substantially different from System Settings.
+struct MacOSSidebarDetail: View {
+    let configuration: SettingsGroupConfiguration
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Group {
+                    if containsGroups {
+                        configuration.content
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        VStack(alignment: .leading, spacing: 14) {
+                            configuration.content
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .macOSSettingsCard()
+                    }
+                }
+                .settingsGroupStyle(MacOSSidebarDetailGroupStyle())
+            }
+            .environment(\.settingsContentRowDecoration, true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 40)
+            .padding(.vertical, 24)
+        }
+        .background(Color(nsColor: .windowBackgroundColor))
+        .navigationTitle(configuration.title)
+    }
+
+    private var containsGroups: Bool {
+        configuration.children.contains { node in
+            if case .group = node {
+                return true
+            }
+            return false
+        }
+    }
+}
+
+/// A detail-only group style that creates the rounded section cards and navigation rows used by macOS System Settings without changing the sidebar hierarchy.
+private struct MacOSSidebarDetailGroupStyle: @preconcurrency SettingsGroupStyle {
+    @MainActor
+    @ViewBuilder
+    func makeBody(configuration: Configuration) -> some View {
+        switch configuration.presentation {
+        case .navigation:
+            MacOSSidebarNavigationRow(configuration: configuration)
+
+        case .inline:
+            VStack(alignment: .leading, spacing: 8) {
+                configuration.label
+                    .font(.headline)
+                    .padding(.horizontal, 4)
+
+                VStack(alignment: .leading, spacing: 0) {
+                    configuration.content
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .environment(\.isInsideMacOSSettingsCard, true)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .macOSSettingsCard()
+
+                if let footer = configuration.footer {
+                    Text(footer)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 4)
+                }
+            }
+        }
+    }
+}
+
+/// A navigation group can appear either inside an inline section's card or as
+/// a direct child of the current destination. Direct children need their own
+/// card; nested rows reuse the card supplied by the inline section.
+private struct MacOSSidebarNavigationRow: View {
+    let configuration: SettingsGroupConfiguration
+    @Environment(\.isInsideMacOSSettingsCard) private var isInsideCard
+
+    var body: some View {
+        if isInsideCard {
+            link
+        } else {
+            link
+                .padding(.horizontal, 20)
+                .macOSSettingsCard()
+        }
+    }
+
+    private var link: some View {
+        NavigationLink(value: configuration) {
+            HStack(spacing: 12) {
+                configuration.label
+                Spacer(minLength: 16)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .foregroundStyle(.primary)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct MacOSSettingsCardContextKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+private extension EnvironmentValues {
+    var isInsideMacOSSettingsCard: Bool {
+        get { self[MacOSSettingsCardContextKey.self] }
+        set { self[MacOSSettingsCardContextKey.self] = newValue }
+    }
+}
+
+private extension View {
+    func macOSSettingsCard() -> some View {
+        background(Color.primary.opacity(0.075), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+#endif
+
 private struct SidebarContainer: View {
     let configuration: SettingsContainerConfiguration
-    @State private var selectedGroup: SettingsGroupConfiguration?
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    let searchPlacement: SettingsSearchPlacement
+    let rootTitleDisplayMode: SettingsRootTitleDisplayMode
+    @State private var detailGeneration = 0
+
+    private var selectedGroup: SettingsGroupConfiguration? {
+        configuration.selectedGroup.wrappedValue
+    }
+
+    nonisolated init(configuration: SettingsContainerConfiguration,
+                     searchPlacement: SettingsSearchPlacement,
+                     rootTitleDisplayMode: SettingsRootTitleDisplayMode) {
+        self.configuration = configuration
+        self.searchPlacement = searchPlacement
+        self.rootTitleDisplayMode = rootTitleDisplayMode
+    }
 
     var body: some View {
         NavigationSplitView {
-            if let searchText = configuration.searchText {
+            if searchPlacement.includesRoot, let searchText = configuration.searchText {
                 List(selection: selectionBinding) {
                     configuration.content
                 }
                 .navigationTitle(configuration.title)
+                .toolbarTitleDisplayMode(rootTitleDisplayMode.toolbarMode)
 #if os(watchOS)
                 .searchable(text: searchText, prompt: "Search settings")
 #else
@@ -136,29 +254,55 @@ private struct SidebarContainer: View {
                     configuration.content
                 }
                 .navigationTitle(configuration.title)
+                .toolbarTitleDisplayMode(rootTitleDisplayMode.toolbarMode)
             }
         } detail: {
 #if os(macOS)
-            // macOS: Static detail placeholder
-            // REASON: Navigation happens via destination-based links that create their own NavigationStack
-            //         The detail column just shows placeholder text until a link is tapped
-            Text("Select a setting")
-                .foregroundStyle(.secondary)
-#else
+            NavigationStack(path: configuration.navigationPath) {
+                if let selectedGroup {
+                    MacOSSidebarDetail(configuration: selectedGroup)
+                        .id(detailGeneration)
+                        .navigationDestination(for: SettingsGroupConfiguration.self) { nestedGroup in
+                            MacOSSidebarDetail(configuration: nestedGroup)
+                        }
+                } else {
+                    Text("Select a setting")
+                        .foregroundStyle(.secondary)
+                }
+            }
+#elseif os(iOS)
             // iOS/iPadOS: Dynamic detail based on selection
             // REASON: Selection-based navigation requires the detail view to respond to selection changes
             //         Works in both compact (sidebar collapsed) and regular (sidebar visible) size classes
             NavigationStack(path: configuration.navigationPath) {
                 if let selectedGroup {
-                    List {
-                        // Render directly from view hierarchy for proper state observation
+                    IOSSearchableSettingsDetail(
+                        configuration: selectedGroup,
+                        navigationPath: configuration.navigationPath,
+                        searchEnabled: searchPlacement.includesDestinations
+                    )
+                    .id(selectedGroup.id)
+                    .navigationDestination(for: SettingsGroupConfiguration.self) { nestedGroupConfig in
+                        IOSSearchableSettingsDetail(
+                            configuration: nestedGroupConfig,
+                            navigationPath: configuration.navigationPath,
+                            searchEnabled: searchPlacement.includesDestinations
+                        )
+                    }
+                } else {
+                    Text("Select a setting")
+                        .foregroundStyle(.secondary)
+                }
+            }
+#else
+            NavigationStack(path: configuration.navigationPath) {
+                if let selectedGroup {
+                    Form {
                         selectedGroup.content
                     }
                     .navigationTitle(selectedGroup.title)
-                    // Handle nested navigation (e.g., General → AirDrop)
                     .navigationDestination(for: SettingsGroupConfiguration.self) { nestedGroupConfig in
-                        List {
-                            // Render directly from view hierarchy for proper state observation
+                        Form {
                             nestedGroupConfig.content
                         }
                         .navigationTitle(nestedGroupConfig.title)
@@ -172,16 +316,111 @@ private struct SidebarContainer: View {
         }
     }
 
-    // Selection binding controls whether the List uses selection-based navigation
+    // The selected value is also the sole source of detail content. Keeping the
+    // binding enabled on macOS prevents sidebar rows from owning cached detail
+    // controls independently of the split view.
     private var selectionBinding: Binding<SettingsGroupConfiguration?>? {
-#if os(macOS)
-        // macOS: No selection binding (uses destination-based navigation instead)
-        return nil
-#else
-        // iOS: Always use selection binding
-        // This enables the detail view to show content based on what's tapped in the sidebar
-        // Works across all size classes and rotations without resetting navigation state
-        return $selectedGroup
-#endif
+        Binding(
+            get: { selectedGroup },
+            set: { newSelection in
+                guard selectedGroup?.id != newSelection?.id else {
+                    configuration.selectedGroup.wrappedValue = newSelection
+                    return
+                }
+
+                configuration.selectedGroup.wrappedValue = newSelection
+
+                // A new sidebar selection must install a new detail hierarchy.
+                // Without a generation identity, macOS can reuse the AppKit
+                // controls from the destination's first presentation. Those
+                // controls then display their original values even though their
+                // bindings have already written newer values to the model.
+                detailGeneration &+= 1
+                configuration.navigationPath.wrappedValue = NavigationPath()
+            }
+        )
     }
 }
+
+#if os(iOS)
+/// A searchable iOS detail destination. Search begins at the current group's
+/// children, which keeps matches scoped to the hierarchy the user is viewing.
+/// Search occupies the top toolbar rather than the system’s automatic placement.
+struct IOSSearchableSettingsDetail: View {
+    let configuration: SettingsGroupConfiguration
+    let navigationPath: Binding<NavigationPath>
+    let searchEnabled: Bool
+
+    @State private var searchText = ""
+    @State private var introductionVisibility: [UUID: Bool] = [:]
+    @Environment(\.settingsNodeViewRegistry) private var registry
+    @Environment(\.settingsSearch) private var search
+
+    @ViewBuilder
+    var body: some View {
+        if searchEnabled {
+            if #available(iOS 26.0, *) {
+                detailForm
+                    // Let DefaultToolbarItem own placement. The older .toolbar
+                    // search placement can request a drawer below the iPhone bar.
+                    .searchable(text: $searchText, prompt: "Search \(configuration.title)")
+                    .searchToolbarBehavior(.minimize)
+                    .toolbar {
+                        DefaultToolbarItem(kind: .search, placement: .topBarTrailing)
+                    }
+            } else {
+                detailForm
+                    .searchable(text: $searchText, placement: .toolbar, prompt: "Search \(configuration.title)")
+            }
+        } else {
+            detailForm
+        }
+    }
+
+    private var hasIntroduction: Bool {
+        guard #available(iOS 18.0, *) else { return false }
+        // Registration hides the title on the first frame. Runtime reports also
+        // support intro rows inside opaque/custom Views that produce no metadata.
+        return registry.hasIntroduction(in: configuration.id)
+            || introductionVisibility[configuration.id] != nil
+    }
+
+    private var detailForm: some View {
+        pageForm
+            .environment(\.settingsIntroductionVisibility, introductionBinding)
+            .modifier(SettingsIntroductionTitle(
+                title: configuration.title,
+                isVisible: !hasIntroduction || !searchText.isEmpty
+                    || !(introductionVisibility[configuration.id] ?? true)
+            ))
+            // Explicitly override a parent sidebar's inlineLarge toolbar mode.
+            // The legacy navigationBarTitleDisplayMode modifier alone is not
+            // the toolbar display-mode contract used by the settings root.
+            .toolbarTitleDisplayMode(.inline)
+    }
+
+    private var introductionBinding: Binding<Bool> {
+        // Capture the page ID so a late callback cannot change another page.
+        let pageID = configuration.id
+        return Binding(
+            get: { introductionVisibility[pageID] ?? true },
+            set: { introductionVisibility[pageID] = $0 }
+        )
+    }
+
+    private var pageForm: some View {
+        Form {
+            if searchText.isEmpty {
+                configuration.content
+            } else {
+                SettingsSearchResults(
+                    query: searchText,
+                    results: search.search(nodes: configuration.children, query: searchText),
+                    navigationPath: navigationPath
+                )
+            }
+        }
+        .navigationTitle(configuration.title)
+    }
+}
+#endif
