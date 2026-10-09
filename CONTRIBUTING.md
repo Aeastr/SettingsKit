@@ -87,7 +87,9 @@ Working commits may be informal while the PR evolves. Maintainers ensure the fin
 
 ## Making a change
 
-Follow existing code conventions and framework boundaries. Include related documentation, examples, and meaningful regression coverage where warranted. Split unrelated cleanup from the requested behavior change. Explain consumer-facing differences and provide migration steps when existing integrations must change.
+Follow existing code conventions and framework boundaries. Include related documentation, examples, and meaningful regression coverage where warranted.
+
+Keep the README focused on purpose, support, a complete quick start, and links into DocC. Put workflows and concepts in the catalog, and public API contracts beside declarations in `///` comments. Each DocC topic folder has a matching landing page; the root and landing pages use `@TopicsVisualStyle(detailedGrid)` and explicit Topics links to guides and symbols. Session-specific validation results belong in the PR, not consumer documentation. Split unrelated cleanup from the requested behavior change. Explain consumer-facing differences and provide migration steps when existing integrations must change.
 
 Complete a coherent set of edits before validating. Stage only intended paths, inspect `git diff --cached`, and run `git diff --cached --check` before committing. Do not sweep unrelated changes into the PR.
 
