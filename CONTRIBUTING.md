@@ -8,7 +8,7 @@ Bug reports, documentation improvements, examples, focused fixes, and new capabi
 
 ## Issues
 
-Use the issue template for bugs, feature requests, or documentation issues. Keep relevant sections and remove the rest. Describe the problem, its effect, and the desired outcome. For bugs, include the smallest useful reproduction, actual versus expected behavior, and SettingsKit version or commit, Apple OS/platform, Xcode version, and Swift version. A brief report is sufficient for a small issue; proposing or implementing a solution is optional.
+Choose **Bug report**, **Feature request**, or **Documentation issue** in the issue chooser. Bug reports ask for the smallest useful reproduction, actual versus expected behavior, and the SettingsKit version or commit, Apple OS/platform, Xcode version, and Swift version. Feature requests ask for the use case and desired outcome; documentation issues identify missing, unclear, or incorrect guidance. Keep reports proportionate and remove irrelevant optional sections. Proposing or implementing a solution is optional.
 
 ## Branches, labels, tags, and releases
 
@@ -387,4 +387,4 @@ Where a hosting plan cannot enforce a rule, maintainers follow it procedurally. 
 
 Start with manual version selection and release publication. Add PR-title checks, CI, changelog generation, or release PR automation when they reduce real work. Automation must leave the target commit and publication step understandable. Never silently turn every merge into a release unless the project explicitly adopts that behavior.
 
-This adoption installs an issue template and a PR description template. It does not configure remote branch protection, labels, required approvals, CI, tag rules, or automatic publication. Inspect hosting settings and existing integrations before changing them or assuming a push has no publication side effects.
+This adoption installs separate bug report, feature request, and documentation issue templates, plus a PR description template. It does not configure remote branch protection, labels, required approvals, CI, tag rules, or automatic publication. Inspect hosting settings and existing integrations before changing them or assuming a push has no publication side effects.
