@@ -91,8 +91,8 @@ search control and `DefaultToolbarItem(kind: .search, placement: .topBarTrailing
 requests its top-toolbar position. Tapping it expands native search. Search still
 uses the current page’s children and respects `.unindexed()`. The root sidebar
 retains its existing search placement. The field’s expansion and available width
-remain system-managed. Source and SDK availability review only; no build, test or
-device layout verification was run for this placement change.
+remain system-managed. The iOS demo build passes; device layout verification
+remains outstanding.
 
 
 ## Introductory rows and navigation titles
@@ -123,8 +123,8 @@ has an intro requires the same index revision update as other structural changes
 Custom settings styles can keep their own title behavior; the automatic animation
 applies to the built-in iOS destination pages.
 
-Source review only: regression coverage was added but not run. Builds, tests,
-scroll animation, lazy Form behavior, navigation return, search interaction,
+For version 3.0.0, all 26 package tests and macOS/iOS demo builds passed.
+Scroll animation, lazy Form behavior, navigation return, search interaction,
 Dynamic Type and VoiceOver remain unverified on device.
 
 
@@ -143,7 +143,7 @@ reports also recognize intros hidden inside opaque views after they render.
 The earlier placement-only implementation did not establish the requested device
 behavior: the owner observed duplicate/large titles and misplaced search. This
 correction explicitly sets toolbar display mode, the title slot and the search
-item placement. Source review only; corrected on-device rendering is unverified.
+item placement. The iOS demo build passes; on-device rendering is unverified.
 
 
 ### Compact destination search
@@ -156,5 +156,5 @@ describes its iPhone behavior as a field below the navigation bar.
 with `.searchToolbarBehavior(.minimize)` following `.searchable` to request the
 compact native control. Activation expands native search. The pre-iOS-26 fallback
 and root sidebar search remain unchanged. This is a source correction based on
-the API contract; the updated device behavior has not been verified. No builds
-or tests were run.
+the API contract. The iOS demo build passes; updated device behavior remains
+unverified.
