@@ -79,9 +79,7 @@ Node identities are scoped to their ancestor path. Two pages can each contain a 
 
 Index construction is synchronous and does not install SwiftUI state or environment wrappers. Pass observable data explicitly to composed settings content. Keep local confirmation state in the rendered indexed control, or supply bindings from an installed owner. Indexing should never trigger a load or a destructive action.
 
-The group case of `SettingsNode` now has a trailing `searchable` value, defaulting
-to `true`. Existing group construction remains valid; code that destructures the
-group case must include this additional associated value.
+The group case of ``SettingsNode`` includes a trailing `searchable` value that defaults to `true`. Include that associated value when pattern matching the case. See <doc:MigratingToVersion3> when updating an older custom index implementation.
 
 ## Search placement on iPhone and iPad
 
@@ -91,70 +89,6 @@ search control and `DefaultToolbarItem(kind: .search, placement: .topBarTrailing
 requests its top-toolbar position. Tapping it expands native search. Search still
 uses the current page’s children and respects `.unindexed()`. The root sidebar
 retains its existing search placement. The field’s expansion and available width
-remain system-managed. The iOS demo build passes; device layout verification
-remains outstanding.
+remain system-managed. On older iOS versions, destination search uses the platform’s standard search-field presentation.
 
-
-## Introductory rows and navigation titles
-
-Mark an app-owned introductory row inside a settings destination:
-
-```swift
-SettingsGroup("iCloud") {
-    SettingsGroup("", .inline) {
-        MyIntroductionView()
-            .settingsIntroduction()
-    }
-    Toggle("Use iCloud", isOn: $syncEnabled).indexed("Use iCloud")
-}
-```
-
-On iOS 18 and later, both built-in destination styles keep the visual title hidden
-while the marked row is visible. When less than 1% remains visible, the title
-fades and moves upward six points over 0.22 seconds. Reduce Motion uses a short
-fade only. The semantic navigation title stays set. With no marker, the normal
-inline title remains visible. Older iOS and other platforms retain normal titles.
-
-The app owns the row's layout and copy; SettingsKit owns detection and animation.
-Declare one marked row per page directly in SettingsContent or an inline group.
-The marker preserves existing search metadata and does not index plain content.
-Nested navigation pages have independent introductions. Changing whether a page
-has an intro requires the same index revision update as other structural changes.
-Custom settings styles can keep their own title behavior; the automatic animation
-applies to the built-in iOS destination pages.
-
-For version 3.0.0, all 26 package tests and macOS/iOS demo builds passed.
-Scroll animation, lazy Form behavior, navigation return, search interaction,
-Dynamic Type and VoiceOver remain unverified on device.
-
-
-### Destination toolbar ownership
-
-Every built-in iOS destination sets `.toolbarTitleDisplayMode(.inline)` and owns
-one persistent `ToolbarItem(placement: .title)`. This overrides the sidebar root’s
-separate title mode. Intro visibility controls the custom title’s opacity/offset;
-without an intro it remains visible. `.navigationTitle` retains the semantic name.
-
-Keep intro-bearing content typed during registration. To exclude its rows from
-search, use `MyPage().unindexed()` rather than `AnyView(MyPage())`; the former
-preserves introduction metadata for the initial title state. Runtime visibility
-reports also recognize intros hidden inside opaque views after they render.
-
-The earlier placement-only implementation did not establish the requested device
-behavior: the owner observed duplicate/large titles and misplaced search. This
-correction explicitly sets toolbar display mode, the title slot and the search
-item placement. The iOS demo build passes; on-device rendering is unverified.
-
-
-### Compact destination search
-
-The owner still observed search outside the top toolbar after the explicit item
-was added. The iOS 26+ path now omits `SearchFieldPlacement.toolbar`: Apple's
-[placement documentation](https://developer.apple.com/documentation/swiftui/searchfieldplacement/toolbar)
-describes its iPhone behavior as a field below the navigation bar.
-`DefaultToolbarItem(kind: .search, placement: .topBarTrailing)` owns the placement,
-with `.searchToolbarBehavior(.minimize)` following `.searchable` to request the
-compact native control. Activation expands native search. The pre-iOS-26 fallback
-and root sidebar search remain unchanged. This is a source correction based on
-the API contract. The iOS demo build passes; updated device behavior remains
-unverified.
+For introductory rows and destination-title behavior, see <doc:IntroductionAndTitles>.

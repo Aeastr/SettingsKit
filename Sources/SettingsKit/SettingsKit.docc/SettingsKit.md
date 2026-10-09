@@ -1,62 +1,29 @@
 # ``SettingsKit``
 
-Build searchable, styled settings interfaces with a declarative SwiftUI API.
+Build settings pages that users can navigate and search while interacting with your app’s live SwiftUI controls.
+
+@Options {
+    @TopicsVisualStyle(detailedGrid)
+}
 
 ## Overview
 
-SettingsKit turns a ``SettingsContainer`` into a hierarchy of ``SettingsGroup`` values and ordinary SwiftUI controls. Groups provide navigation structure while the `indexed` modifier family opts individual controls into search.
+Declare a hierarchy with ``SettingsContainer`` and ``SettingsGroup``, then opt individual controls into search with an `indexed` modifier. Your app owns values, persistence, validation, and actions; SettingsKit supplies structure, indexing, search, and presentation.
 
-Use ``SettingsView`` for the built-in presentation, or use ``SettingsHost`` to place SettingsKit's index, search results, and navigation state inside an app-owned layout.
-
-```swift
-import SettingsKit
-import SwiftUI
-
-struct AppSettings: SettingsContainer {
-    @State private var notificationsEnabled = true
-
-    var settingsBody: some SettingsContent {
-        SettingsGroup("General") {
-            Toggle("Notifications", isOn: $notificationsEnabled)
-                .indexed("Notifications")
-        }
-    }
-}
-```
+Use ``SettingsView`` for the built-in interface or ``SettingsHost`` when your app owns navigation and layout. Begin with <doc:Essentials>, then explore composition, search, and presentation as needed.
 
 ## Topics
 
-### Essentials
+### Start Here
 
-- <doc:MigratingToVersion3>
-- <doc:UnderstandingSettingsKit>
-- <doc:GettingStarted>
-- <doc:BuildingSettings>
-- ``SettingsContainer``
-- ``SettingsContent``
-- ``SettingsGroup``
-- ``CustomSettingsGroup``
+- <doc:Essentials>
 
-### Indexing and Search
+### Build Your Settings Interface
 
-- <doc:IndexingAndSearch>
-- ``SettingsNode``
-- ``SettingsSearch``
-- ``DefaultSettingsSearch``
-- ``SettingsSearchResult``
+- <doc:Composition>
+- <doc:Search>
+- <doc:Presentation>
 
-### Presentation and Styling
+### Understand the Runtime
 
-- <doc:CustomPresentation>
-- <doc:StylingSettings>
-- ``SettingsView``
-- ``SettingsHost``
-- ``SettingsPresentationContext``
-- ``SettingsSearchResults``
-- ``SettingsGroupStyle``
-- ``SettingsStyle``
-
-### Architecture
-
-- <doc:SettingsKitArchitecture>
-- <doc:MacOSNavigationState>
+- <doc:Architecture>

@@ -32,6 +32,18 @@ struct AppSettings: SettingsContainer {
 
 Groups are always part of the metadata hierarchy. Ordinary SwiftUI views render normally, but only views marked with an `indexed` modifier become individual search targets. See <doc:IndexingAndSearch> for the complete search model.
 
+## Present settings in your app
+
+Mount the container in the SwiftUI view that should display settings. The example container owns its local view state; use an app-owned observable model or persistent storage when settings must outlive this view.
+
+```swift
+struct SettingsScreen: View {
+    var body: some View {
+        AppSettings()
+    }
+}
+```
+
 ## Choose a presentation
 
 The default protocol implementation uses ``SettingsView`` and the sidebar style. Apply `settingsStyle(_:)` to use another full presentation style:
