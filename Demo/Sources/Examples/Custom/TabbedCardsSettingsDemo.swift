@@ -674,7 +674,7 @@ private struct ThemeSegmentPicker: View {
     @ViewBuilder
     var body: some View {
         #if os(macOS)
-        #if compiler(>=6.3)
+        #if compiler(>=6.4)
         if #available(macOS 27.0, *) {
             picker
                 .pickerStyle(.tabs)
@@ -754,7 +754,7 @@ private struct SettingsTabPicker: View {
     @ViewBuilder
     var body: some View {
         #if os(macOS)
-        #if compiler(>=6.3)
+        #if compiler(>=6.4)
         if #available(macOS 27.0, *) {
             picker
                 .pickerStyle(.tabs)

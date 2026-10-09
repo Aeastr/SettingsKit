@@ -33,13 +33,15 @@
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/aeastr/SettingsKit.git", from: "1.0.0")
+    .package(url: "https://github.com/aeastr/SettingsKit.git", from: "3.0.0")
 ]
 ```
 
 ```swift
 import SettingsKit
 ```
+
+Upgrading from 2.x? Read the [3.0 migration guide](Sources/SettingsKit/SettingsKit.docc/MigratingToVersion3.md) and [release notes](https://github.com/Aeastr/SettingsKit/releases/tag/3.0.0) before updating. Version 3 changes public styling, icon, and metadata APIs.
 
 
 ## Usage
@@ -507,7 +509,7 @@ For the complete system model, integration patterns, and implementation details,
 
 ## Contributing
 
-Contributions welcome. Please feel free to submit a Pull Request.
+Contributions welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for branch naming, pull requests, validation, and releases.
 
 
 ## License
@@ -543,8 +545,8 @@ has an intro requires the same index revision update as other structural changes
 Custom settings styles can keep their own title behavior; the automatic animation
 applies to the built-in iOS destination pages.
 
-Source review only: regression coverage was added but not run. Builds, tests,
-scroll animation, lazy Form behavior, navigation return, search interaction,
+For version 3.0.0, all 26 package tests and macOS/iOS demo builds passed.
+Scroll animation, lazy Form behavior, navigation return, search interaction,
 Dynamic Type and VoiceOver remain unverified on device.
 
 
@@ -563,7 +565,7 @@ reports also recognize intros hidden inside opaque views after they render.
 The earlier placement-only implementation did not establish the requested device
 behavior: the owner observed duplicate/large titles and misplaced search. This
 correction explicitly sets toolbar display mode, the title slot and the search
-item placement. Source review only; corrected on-device rendering is unverified.
+item placement. The iOS demo build passes; on-device rendering is unverified.
 
 
 ### Compact destination search
@@ -576,5 +578,5 @@ describes its iPhone behavior as a field below the navigation bar.
 with `.searchToolbarBehavior(.minimize)` following `.searchable` to request the
 compact native control. Activation expands native search. The pre-iOS-26 fallback
 and root sidebar search remain unchanged. This is a source correction based on
-the API contract; the updated device behavior has not been verified. No builds
-or tests were run.
+the API contract. The iOS demo build passes; updated device behavior remains
+unverified.

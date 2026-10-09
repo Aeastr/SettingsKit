@@ -114,11 +114,11 @@ AnyView(content)
 
 The registry builders follow the same rule. SwiftUI decides when to evaluate the content.
 
-### Build one settings hierarchy per host update
+### Keep indexing separate from live rendering
 
-``SettingsHost`` previously evaluated `container.settingsBody` once for indexing and again for normal rendering. Even when both results referenced the same app model, this created separate control graphs for search and the ordinary page.
+Building metadata during every host body evaluation can couple search indexing to live control updates. Even when the controls share an app model, repeated index construction creates unnecessary registration and observation work.
 
-The host now evaluates `settingsBody` once and uses that value for metadata, registry builders, and root presentation. This is not what reset the model—the instrumented value proved the model never reset—but it removes an unnecessary difference between the two routes and guarantees that search and normal presentation begin with the same controls and bindings.
+The host now builds metadata and registry entries in a task at initial presentation and whenever `settingsIndexRevision` changes. Normal presentation evaluates `settingsBody` in a separate live root view. Search and normal destinations resolve content through the host's registry, while controls remain connected to the app's bindings. Update the revision when titles, tags, or structure change; ordinary control-value changes do not require rebuilding the index.
 
 ## Why iOS did not show the same bug
 
@@ -153,7 +153,7 @@ For the demo, "persistence" in this discussion means that a value remains in the
 Automated tests now verify that:
 
 - creating a search group configuration does not resolve its registered view immediately;
-- one ``SettingsHost`` body evaluation builds `settingsBody` only once;
+- ``SettingsHost`` body evaluation does not build the metadata index;
 - search metadata continues to preserve navigation and matched-control behavior.
 
 The important macOS interaction test is a round trip, not only the first presentation:

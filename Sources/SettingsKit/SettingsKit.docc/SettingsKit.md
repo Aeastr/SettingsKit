@@ -28,6 +28,7 @@ struct AppSettings: SettingsContainer {
 
 ### Essentials
 
+- <doc:MigratingToVersion3>
 - <doc:UnderstandingSettingsKit>
 - <doc:GettingStarted>
 - <doc:BuildingSettings>
