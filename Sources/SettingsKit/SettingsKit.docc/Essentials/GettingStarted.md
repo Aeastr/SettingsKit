@@ -1,42 +1,38 @@
 # Getting Started
 
-Define a settings container, group related controls, and opt controls into search.
-
-## Create a settings container
-
-Conform a SwiftUI view to ``SettingsContainer`` and implement ``SettingsContainer/settingsBody`` with a ``SettingsContentBuilder`` block. The protocol supplies the built-in ``SettingsView`` as its default body.
-
-The `settingsBody` requirement applies the builder automatically, so implementations do not write the attribute explicitly. Custom ``SettingsContent`` types with multiple top-level expressions do need an explicit `@SettingsContentBuilder`; see <doc:UnderstandingSettingsKit#Extracted-settings-content>.
+Use ``SettingsHost`` as the entry point for new integrations. Declare settings in ``SettingsContainer/settingsBody`` and implement an explicit `body` that owns the screen.
 
 ```swift
 import SettingsKit
 import SwiftUI
 
 struct AppSettings: SettingsContainer {
-    @State private var darkMode = false
+    @State private var notificationsEnabled = true
     @State private var displayName = "Guest"
 
-    var settingsBody: some SettingsContent {
-        SettingsGroup("Appearance") {
-            Toggle("Dark Mode", isOn: $darkMode)
-                .indexed("Dark Mode", tags: ["theme", "night"])
+    var body: some View {
+        SettingsHost(container: self) { context in
+            NavigationStack(path: context.navigationPath) {
+                Form { context.content }
+                    .navigationTitle(context.title)
+                    .searchable(text: context.searchText)
+                    .navigationDestination(for: SettingsGroupConfiguration.self) { group in
+                        Form { group.content }.navigationTitle(group.title)
+                    }
+            }
         }
+    }
 
-        SettingsGroup("Profile") {
+    var settingsBody: some SettingsContent {
+        SettingsGroup("General") {
+            Toggle("Notifications", isOn: $notificationsEnabled)
+                .indexed("Notifications", tags: ["alerts"])
             TextField("Display Name", text: $displayName)
                 .indexed("Display Name")
         }
     }
 }
-```
 
-Groups are always part of the metadata hierarchy. Ordinary SwiftUI views render normally, but only views marked with an `indexed` modifier become individual search targets. See <doc:IndexingAndSearch> for the complete search model.
-
-## Present settings in your app
-
-Mount the container in the SwiftUI view that should display settings. The example container owns its local view state; use an app-owned observable model or persistent storage when settings must outlive this view.
-
-```swift
 struct SettingsScreen: View {
     var body: some View {
         AppSettings()
@@ -44,18 +40,8 @@ struct SettingsScreen: View {
 }
 ```
 
-## Choose a presentation
+`SettingsContainer` declares the hierarchy; its explicit body uses `SettingsHost` to supply runtime values to app-owned SwiftUI. Group titles are searchable; individual controls opt in with `.indexed(...)`. Search results display the live controls bound to the same values.
 
-The default protocol implementation uses ``SettingsView`` and the sidebar style. Apply `settingsStyle(_:)` to use another full presentation style:
+The example uses local view state. Your app owns settings models, persistence, validation, actions, and errors from those actions. Use your normal observable model, bindings, or persistent storage when values must survive the view’s lifetime. SettingsKit does not save them automatically.
 
-```swift
-AppSettings()
-    .settingsStyle(.single)
-```
-
-When your app already owns its navigation, toolbar, or tabs, use ``SettingsHost`` instead. See <doc:CustomPresentation>.
-
-## Next steps
-
-- Use <doc:BuildingSettings> to learn about groups, styling boundaries, and custom content.
-- Use <doc:StylingSettings> to customize group or container presentation.
+See <doc:CustomPresentation> for app-owned navigation, toolbar placement and search rendering. The implicit container body and complete styled presentation APIs are deprecated and retained for compatibility.

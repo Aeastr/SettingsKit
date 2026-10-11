@@ -63,6 +63,7 @@ public struct SettingsPresentationContext: @unchecked Sendable {
     ///
     /// This value is ``rootContent`` when the query is empty and ``searchContent`` while searching.
     public let content: AnyView
+    private let registry: SettingsNodeViewRegistry
     private let makeGroupConfiguration: (SettingsNode) -> SettingsGroupConfiguration?
     private let makeIndexedView: (SettingsNode) -> AnyView?
 
@@ -76,9 +77,11 @@ public struct SettingsPresentationContext: @unchecked Sendable {
         rootContent: AnyView,
         searchContent: AnyView,
         content: AnyView,
+        registry: SettingsNodeViewRegistry,
         makeGroupConfiguration: @escaping (SettingsNode) -> SettingsGroupConfiguration?,
         makeIndexedView: @escaping (SettingsNode) -> AnyView?
     ) {
+        self.registry = registry
         self.title = title
         self.searchText = searchText
         self.navigationPath = navigationPath
@@ -97,6 +100,12 @@ public struct SettingsPresentationContext: @unchecked Sendable {
         !searchText.wrappedValue.isEmpty
     }
 
+    /// Whether a destination contains a registered introduction row.
+    @MainActor
+    public func hasIntroduction(in group: SettingsGroupConfiguration) -> Bool {
+        registry.hasIntroduction(in: group.id)
+    }
+
     /// Resolves a metadata group into live destination content for this host.
     public func groupConfiguration(for node: SettingsNode) -> SettingsGroupConfiguration? {
         makeGroupConfiguration(node)
@@ -109,7 +118,7 @@ public struct SettingsPresentationContext: @unchecked Sendable {
 
 }
 
-/// A presentation-neutral host for a settings container.
+/// The recommended, presentation-neutral entry point for a settings container.
 ///
 /// `SettingsHost` owns only settings runtime state: the metadata index, search query, search results, render scope, and navigation path. Its content closure owns all visible presentation.
 ///
@@ -196,6 +205,7 @@ public struct SettingsHost<Container: SettingsContainer, Body: View>: View {
                 rootContent: rootContent,
                 searchContent: searchContent,
                 content: presentedContent,
+                registry: registry,
                 makeGroupConfiguration: { node in
                     guard node.isGroup else { return nil }
                     return node.asGroupConfiguration(registry: registry)
@@ -254,6 +264,7 @@ private struct SettingsLiveRoot<Container: SettingsContainer>: View {
 /// The main view for SettingsKit's built-in settings presentation.
 ///
 /// ``SettingsContainer`` uses this view as its default body. Use ``SettingsHost`` directly when the app should own navigation and visible layout.
+@available(*, deprecated, message: "Use SettingsHost and app-owned navigation and layout instead.")
 public struct SettingsView<Container: SettingsContainer>: View {
     private let container: Container
     private let navigationRequest: SettingsNavigationRequest?
@@ -285,6 +296,9 @@ public struct SettingsView<Container: SettingsContainer>: View {
                     selectedGroup: context.selectedGroup
                 )
             )
+        }
+        .transformEnvironment(\.settingsGroupStyleOverride) { groupStyle in
+            if groupStyle == nil { groupStyle = AnySettingsGroupStyle(adapting: style) }
         }
     }
 }

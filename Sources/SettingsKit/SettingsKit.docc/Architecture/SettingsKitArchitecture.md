@@ -1,5 +1,8 @@
 # Architecture
 
+> Recommended integration: use ``SettingsHost`` with app-owned navigation, layout, and toolbars. The complete styled presentation APIs and implicit container body are deprecated but remain available for compatibility. Examples of `SettingsView` and `SettingsStyle` below describe the legacy integration. See <doc:CustomPresentation>.
+
+
 Understand how SettingsKit combines metadata indexing with live SwiftUI views.
 
 ## Separate metadata from rendering

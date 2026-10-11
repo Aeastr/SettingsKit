@@ -1,5 +1,8 @@
 # Migrating to Version 3
 
+> Recommended integration: use ``SettingsHost`` with app-owned navigation, layout, and toolbars. The complete styled presentation APIs and implicit container body are deprecated but remain available for compatibility. Examples of `SettingsView` and `SettingsStyle` below describe the legacy integration. See <doc:CustomPresentation>.
+
+
 Update a 2.x integration for SettingsKit's new presentation, styling, and metadata APIs.
 
 ## Update the dependency
@@ -50,9 +53,9 @@ Update group configuration access:
 | Private configuration identity | Public `configuration.id` |
 | Container navigation path only | Navigation path plus `configuration.selectedGroup` |
 
-Use `.settingsStyle(...)` to replace a full built-in presentation. Use `.settingsGroupStyle(...)` when only group appearance should change.
+Replace `.settingsStyle(...)` and the implicit container body with an explicit `SettingsHost` body. Use `.settingsGroupStyle(...)` for app-specific group appearance.
 
-For app-owned navigation, tabs, search fields, or toolbars, use `SettingsHost` and its `SettingsPresentationContext`. Resolve destination and indexed-control views through `context.groupConfiguration(for:)` and `context.indexedView(for:)` so they use that host's registry. See <doc:CustomPresentation>.
+For all new integrations, use `SettingsHost` and its `SettingsPresentationContext`. Resolve destination and indexed-control views through `context.groupConfiguration(for:)` and `context.indexedView(for:)` so they use that host's registry. See <doc:CustomPresentation>.
 
 ## Update metadata and custom search
 

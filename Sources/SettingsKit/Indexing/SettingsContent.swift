@@ -69,7 +69,8 @@ public extension SettingsContent {
     }
 }
 
-/// A container for settings content, typically the root-level settings view.
+/// A settings hierarchy with an app-owned root view.
+/// Implement an explicit body using ``SettingsHost``; the implicit styled body is deprecated.
 public protocol SettingsContainer: View {
     /// The concrete settings content produced by this container.
     associatedtype SettingsBody: SettingsContent
@@ -89,6 +90,7 @@ public extension SettingsContainer {
     /// The built-in settings presentation.
     ///
     /// Use ``SettingsHost`` directly when the app should own the visible shell.
+    @available(*, deprecated, message: "Use SettingsHost and app-owned navigation and layout instead.")
     var body: some View {
         SettingsView(container: self)
     }

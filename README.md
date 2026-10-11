@@ -8,8 +8,8 @@
 
 - Organize settings into navigation pages, inline sections, and custom destinations.
 - Search titles and tags, with matching controls retaining their live bindings.
-- Use built-in sidebar and single-column interfaces or supply your own navigation and layout.
-- Style complete presentations or individual groups independently.
+- Own navigation, toolbars, and layout with SettingsHost.
+- Customize individual groups without giving the package control of your screen.
 - Exclude groups from search while keeping them available through normal navigation.
 
 <img width="600" src="https://github.com/user-attachments/assets/7d937cbd-182d-4715-b030-fd172a9cdc08" alt="SettingsKit interface preview">
@@ -20,7 +20,7 @@ Add SettingsKit through Xcode’s package dependencies, or declare it in `Packag
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Aeastr/SettingsKit.git", from: "3.0.0")
+    .package(url: "https://github.com/Aeastr/SettingsKit.git", from: "3.1.0")
 ]
 ```
 
@@ -40,6 +40,19 @@ struct AppSettings: SettingsContainer {
     @State private var notificationsEnabled = true
     @State private var displayName = "Guest"
 
+    var body: some View {
+        SettingsHost(container: self) { context in
+            NavigationStack(path: context.navigationPath) {
+                Form { context.content }
+                    .navigationTitle(context.title)
+                    .searchable(text: context.searchText)
+                    .navigationDestination(for: SettingsGroupConfiguration.self) { group in
+                        Form { group.content }.navigationTitle(group.title)
+                    }
+            }
+        }
+    }
+
     var settingsBody: some SettingsContent {
         SettingsGroup("General") {
             Toggle("Notifications", isOn: $notificationsEnabled)
@@ -57,30 +70,17 @@ struct SettingsScreen: View {
 }
 ```
 
-`SettingsContainer` supplies the built-in settings interface. Group titles are searchable; individual controls opt in with `.indexed(...)`. Search results display the live controls bound to the same values.
+`SettingsContainer` declares the hierarchy; its explicit body uses `SettingsHost` to supply runtime values to app-owned SwiftUI. Group titles are searchable; individual controls opt in with `.indexed(...)`. Search results display the live controls bound to the same values.
 
 The example uses local view state. Your app owns settings models, persistence, validation, actions, and errors from those actions. Use your normal observable model, bindings, or persistent storage when values must survive the view’s lifetime. SettingsKit does not save them automatically.
 
-## Choose a Presentation
+## Own the Presentation
 
-Use a complete built-in interface or integrate SettingsKit into your existing shell:
+`SettingsHost` is the recommended entry point. It manages indexing, search state, live controls, and navigation bindings. Your closure owns navigation containers, forms, lists, toolbars, dismissal, and layout. Use `.settingsGroupStyle(...)` to customize rows and sections independently. The default group rendering uses ordinary sections and value-based navigation links; it creates no navigation container.
 
-| Approach | Use when |
-| --- | --- |
-| Default sidebar style | SettingsKit should provide the navigation and settings layout. |
-| Single-column style | Settings should appear in one column using `Form`. |
-| `SettingsStyle` | A reusable style should own container, navigation, and group presentation. |
-| `SettingsHost` | Your app owns navigation, tabs, toolbars, and layout. |
-| `SettingsGroupStyle` | Only group presentation should change inside an app-owned shell. |
+`SettingsView`, the implicit `SettingsContainer.body`, `SettingsStyle`, `AnySettingsStyle`, `.settingsStyle(...)`, and the sidebar/single-column presentation styles are deprecated. They remain available for source compatibility. Define an explicit container body with `SettingsHost` when migrating; do not wrap the old styled view in another navigation stack.
 
-For example, replace `AppSettings()` in `SettingsScreen.body` with:
-
-```swift
-AppSettings()
-    .settingsStyle(.single(search: .destinations))
-```
-
-Built-in styles support `.root`, `.destinations`, `.all`, and `.none` search placement. Page searches use that destination’s hierarchy. On iOS 26 and later, destination search requests a compact native toolbar control; expansion and available width remain system-managed. [Presentation documentation](Sources/SettingsKit/SettingsKit.docc/Presentation/Presentation.md) covers custom shells, styling, and destination titles.
+See [app-owned presentation](Sources/SettingsKit/SettingsKit.docc/Presentation/CustomPresentation.md) for search rendering and layout. Page-scoped search uses the destination's `children` with a `SettingsSearch` implementation and `SettingsSearchResults`. Introduction visibility can be observed with `.settingsIntroductionVisibility(...)`; the app decides how to present its title.
 
 ## Indexing and State
 
