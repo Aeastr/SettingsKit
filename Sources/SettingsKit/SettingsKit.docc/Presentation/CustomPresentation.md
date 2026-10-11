@@ -1,4 +1,4 @@
-# Building a Custom Presentation
+# Building an App-Owned Presentation
 
 Use SettingsKit's indexing and search runtime inside navigation and layout owned by your app.
 
@@ -90,3 +90,13 @@ local to that example; it is not part of the SettingsKit search or style APIs.
 ## Keep responsibilities separate
 
 The host owns runtime state: the query, metadata index, view registry, search results, and navigation path. The closure owns visible structure, including navigation containers, toolbars, tabs, split views, and window chrome.
+
+## Migrate a styled container
+
+Implement an explicit `body` using the host example above and remove `.settingsStyle(...)`. Preserve your hierarchy and indexing declarations. Apply `.settingsGroupStyle(...)` if the app has custom rows. Attach toolbar items to content inside the app's navigation container. In split layouts, choose which visible column owns dismissal; do not attach the same control to both columns.
+
+The deprecated styled APIs remain callable during migration; their layout behavior is retained. Deprecation does not remove `SettingsGroupStyle`, search renderers, or settings content types.
+
+## Observe introduction visibility
+
+Use `context.hasIntroduction(in: group)` to identify a marked destination. Apply `.settingsIntroductionVisibility($isVisible)` to its content to receive visibility changes on supported platforms. Your app decides whether to hide, animate, or always display its title. Keep a normal title on platforms without visibility support.

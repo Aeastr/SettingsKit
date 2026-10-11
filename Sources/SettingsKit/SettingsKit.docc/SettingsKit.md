@@ -8,9 +8,9 @@ Build settings pages that users can navigate and search while interacting with y
 
 ## Overview
 
-Declare a hierarchy with ``SettingsContainer`` and ``SettingsGroup``, then opt individual controls into search with an `indexed` modifier. Your app owns values, persistence, validation, and actions; SettingsKit supplies structure, indexing, search, and presentation.
+Declare a hierarchy with ``SettingsContainer`` and ``SettingsGroup``, then opt individual controls into search with an `indexed` modifier. Your app owns values, persistence, validation, and actions; SettingsKit supplies the semantic hierarchy, indexing, search, and live content.
 
-Use ``SettingsView`` for the built-in interface or ``SettingsHost`` when your app owns navigation and layout. Begin with <doc:Essentials>, then explore composition, search, and presentation as needed.
+Use ``SettingsHost`` as the recommended entry point, with navigation, toolbars, and layout owned by your app. The complete styled ``SettingsView`` integration is deprecated and retained for compatibility. Begin with <doc:Essentials>, then explore composition, search, and presentation as needed.
 
 ## Topics
 

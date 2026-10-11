@@ -1,5 +1,8 @@
 # Styling Settings
 
+> Recommended integration: use ``SettingsHost`` with app-owned navigation, layout, and toolbars. The complete styled presentation APIs and implicit container body are deprecated but remain available for compatibility. Examples of `SettingsView` and `SettingsStyle` below describe the legacy integration. See <doc:CustomPresentation>.
+
+
 Customize either individual group presentation or the entire built-in settings shell.
 
 ## Style groups inside an app-owned shell

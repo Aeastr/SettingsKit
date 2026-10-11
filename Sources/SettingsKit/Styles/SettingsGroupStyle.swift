@@ -18,12 +18,17 @@ public protocol SettingsGroupStyle {
 }
 
 struct SettingsGroupStyleKey: EnvironmentKey {
-    static let defaultValue = AnySettingsGroupStyle(adapting: SidebarSettingsStyle())
+    static let defaultValue: AnySettingsGroupStyle? = nil
 }
 
 extension EnvironmentValues {
-    var settingsGroupStyle: AnySettingsGroupStyle {
+    var settingsGroupStyleOverride: AnySettingsGroupStyle? {
         get { self[SettingsGroupStyleKey.self] }
+        set { self[SettingsGroupStyleKey.self] = newValue }
+    }
+
+    var settingsGroupStyle: AnySettingsGroupStyle {
+        get { self[SettingsGroupStyleKey.self] ?? AnySettingsGroupStyle(StandardSettingsGroupStyle()) }
         set { self[SettingsGroupStyleKey.self] = newValue }
     }
 }
@@ -62,5 +67,20 @@ public extension View {
     /// - Returns: A view with the group style in its environment.
     func settingsGroupStyle<S: SettingsGroupStyle>(_ style: S) -> some View {
         environment(\.settingsGroupStyle, AnySettingsGroupStyle(style))
+    }
+}
+
+private struct StandardSettingsGroupStyle: SettingsGroupStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        switch configuration.presentation {
+        case .navigation:
+            NavigationLink(value: configuration) { configuration.label }
+        case .inline:
+            Section {
+                configuration.content
+            } footer: {
+                if let footer = configuration.footer { Text(footer) }
+            }
+        }
     }
 }

@@ -31,6 +31,7 @@ public enum SettingsRootTitleDisplayMode: Sendable {
 ///
 /// Search uses the same host-scoped metadata and live-view registry as every other presentation. See <doc:SettingsKitArchitecture> for how the rendering paths fit together.
 ///
+@available(*, deprecated, message: "Use SettingsHost and app-owned navigation and layout instead.")
 public struct SidebarSettingsStyle: SettingsStyle {
     private let searchPlacement: SettingsSearchPlacement
     private let rootTitleDisplayMode: SettingsRootTitleDisplayMode

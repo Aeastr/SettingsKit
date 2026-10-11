@@ -1,6 +1,7 @@
 import SwiftUI
 
 /// A single-column settings style with standard navigation and form appearance.
+@available(*, deprecated, message: "Use SettingsHost and app-owned navigation and layout instead.")
 public struct SingleColumnSettingsStyle: @preconcurrency SettingsStyle {
     private let searchPlacement: SettingsSearchPlacement
 

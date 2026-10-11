@@ -4,6 +4,29 @@ import SwiftUI
 
 final class SettingsIntroductionTests: XCTestCase {
     @MainActor
+    func testPresentationContextIntroductionLookupIsHostLocal() throws {
+        let registry = SettingsNodeViewRegistry()
+        let page = SettingsGroup("Account") {
+            Text("Welcome").settingsIntroduction()
+        }
+        let node = try XCTUnwrap(page.makeNodes(in: SettingsContentScope(registry: registry)).first)
+        let group = node.asGroupConfiguration(registry: registry)
+        func context(_ registry: SettingsNodeViewRegistry) -> SettingsPresentationContext {
+            SettingsPresentationContext(
+                title: "Settings", searchText: .constant(""),
+                navigationPath: .constant(NavigationPath()), selectedGroup: .constant(nil),
+                nodes: [node], searchResults: [], rootContent: AnyView(EmptyView()),
+                searchContent: AnyView(EmptyView()), content: AnyView(EmptyView()),
+                registry: registry,
+                makeGroupConfiguration: { $0.asGroupConfiguration(registry: registry) },
+                makeIndexedView: { registry.view(for: $0.id) }
+            )
+        }
+        XCTAssertTrue(context(registry).hasIntroduction(in: group))
+        XCTAssertFalse(context(SettingsNodeViewRegistry()).hasIntroduction(in: group))
+    }
+
+    @MainActor
     func testUnindexedPageContentPreservesIntroWithoutIndexingItsRows() throws {
         let registry = SettingsNodeViewRegistry()
         let page = SettingsGroup("iCloud") {

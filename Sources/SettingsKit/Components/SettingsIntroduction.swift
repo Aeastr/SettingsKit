@@ -1,6 +1,12 @@
 import SwiftUI
 
 public extension View {
+    /// Reports introduction visibility to an app-owned page without styling its title.
+    /// On platforms without scroll visibility support, the binding is unchanged.
+    func settingsIntroductionVisibility(_ visibility: Binding<Bool>) -> some View {
+        environment(\.settingsIntroductionVisibility, visibility)
+    }
+
     /// Marks this row as the current settings page's introduction.
     ///
     /// On iOS 18 and later, built-in destination pages hide their visual title

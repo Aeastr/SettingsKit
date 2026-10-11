@@ -57,6 +57,7 @@ public enum SettingsSearchPlacement: Sendable, Hashable {
 ///
 /// }
 /// ```
+@available(*, deprecated, message: "Use SettingsHost and app-owned navigation and layout instead.")
 public protocol SettingsStyle {
     /// The view that renders the complete settings presentation.
     associatedtype ContainerBody: View
@@ -160,6 +161,7 @@ extension EnvironmentValues {
 // MARK: - Type Erasure
 
 /// A type-erased settings style.
+@available(*, deprecated, message: "Use SettingsHost and app-owned navigation and layout instead.")
 public struct AnySettingsStyle: SettingsStyle, @unchecked Sendable {
     private let _makeContainer: (SettingsContainerConfiguration) -> AnyView
     private let _makeGroup: (SettingsGroupConfiguration) -> AnyView
@@ -195,6 +197,7 @@ public extension View {
     ///
     /// - Parameter style: The style used for the container and groups.
     /// - Returns: A view with the style in its environment.
+    @available(*, deprecated, message: "Use SettingsHost and app-owned navigation and layout instead.")
     func settingsStyle<S: SettingsStyle>(_ style: S) -> some View {
         environment(\.settingsStyle, AnySettingsStyle(style))
             .environment(\.settingsGroupStyle, AnySettingsGroupStyle(adapting: style))

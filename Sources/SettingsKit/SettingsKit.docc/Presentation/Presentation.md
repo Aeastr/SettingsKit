@@ -1,5 +1,8 @@
 # Presentation
 
+> Recommended integration: use ``SettingsHost`` with app-owned navigation, layout, and toolbars. The complete styled presentation APIs and implicit container body are deprecated but remain available for compatibility. Examples of `SettingsView` and `SettingsStyle` below describe the legacy integration. See <doc:CustomPresentation>.
+
+
 Choose a built-in settings interface or integrate the same runtime into your app’s own layout.
 
 @Options {
@@ -8,7 +11,7 @@ Choose a built-in settings interface or integrate the same runtime into your app
 
 ## Overview
 
-Use the built-in sidebar or single-column style for a complete interface. Use a host when your app owns navigation, tabs, toolbars, or layout. Style groups independently when the surrounding interface already exists.
+Use ``SettingsHost`` to own navigation, tabs, toolbars, and layout. Style groups independently with ``SettingsGroupStyle``. The sidebar and single-column styles are legacy compatibility APIs.
 
 ## Topics
 
